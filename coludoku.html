@@ -26,7 +26,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             text-align: center;
-            max-width: 600px; /* 限制最大寬度，比較好看 */
+            max-width: 600px;
             width: 90%;
         }
 
@@ -54,7 +54,7 @@
             padding: 10px;
             border-radius: 8px;
             border: 1px solid #ddd;
-            width: 30%; /* 手機上自動排版 */
+            width: 30%;
             min-width: 90px;
             box-sizing: border-box;
         }
@@ -70,7 +70,7 @@
             font-size: 1rem;
         }
 
-        /* --- 圖形按鈕 (CSS Grid 優化) --- */
+        /* --- 圖形按鈕 --- */
         .shape-selector {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -83,7 +83,7 @@
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.2s;
-            aspect-ratio: 1 / 1; /* 保持正方形 */
+            aspect-ratio: 1 / 1;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -108,7 +108,7 @@
             transition: transform 0.2s;
             margin-top: 15px;
             box-shadow: 0 4px 6px rgba(46, 204, 113, 0.3);
-            width: 100%; /* 手機上好按 */
+            width: 100%;
         }
         .solve-btn:active { transform: scale(0.98); }
         .solve-btn:disabled { background-color: #95a5a6; cursor: not-allowed; box-shadow: none; }
@@ -117,18 +117,17 @@
         .error-msg { color: #e74c3c; }
         .success-msg { color: #27ae60; }
 
-        /* --- 九宮格 (關鍵優化：自適應寬度) --- */
+        /* --- 九宮格 --- */
         .main-grid {
             display: grid;
-            /* 這裡改成 1fr，讓格子自動填滿寬度，不會超出螢幕 */
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
             background-color: #333;
             padding: 12px;
             border-radius: 15px;
             width: 100%;
-            max-width: 400px; /* 限制電腦版最大寬度 */
-            aspect-ratio: 1 / 1; /* 保持整體正方形 */
+            max-width: 400px;
+            aspect-ratio: 1 / 1;
             box-sizing: border-box;
         }
 
@@ -141,7 +140,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* 讓每個格子自己也是正方形 */
             aspect-ratio: 1 / 1; 
         }
 
@@ -165,7 +163,7 @@
         <div class="step-title">步驟 1：選擇目標魔石 💎</div>
         <div class="target-selection-area">
             <div class="target-picker">
-                <div class="picker-label">魔石 I</div>
+                <div class="picker-label">魔石1</div>
                 <select id="t1-id" onchange="updatePreview()"></select>
                 <select id="t1-face" onchange="updatePreview()">
                     <option value="W" selected>W (白)</option>
@@ -173,7 +171,7 @@
                 </select>
             </div>
             <div class="target-picker">
-                <div class="picker-label">魔石 II</div>
+                <div class="picker-label">魔石2</div>
                 <select id="t2-id" onchange="updatePreview()"></select>
                 <select id="t2-face" onchange="updatePreview()">
                     <option value="W" selected>W (白)</option>
@@ -181,7 +179,7 @@
                 </select>
             </div>
             <div class="target-picker">
-                <div class="picker-label">魔石 III</div>
+                <div class="picker-label">魔石3</div>
                 <select id="t3-id" onchange="updatePreview()"></select>
                 <select id="t3-face" onchange="updatePreview()">
                     <option value="W">W (白)</option>
@@ -231,16 +229,23 @@
 
         // --- 2. 初始化 ---
         function init() {
-            // 填入下拉選單 (優化文字顯示)
+            // 填入下拉選單
             ['t1-id', 't2-id', 't3-id'].forEach((id, idx) => {
                 const sel = document.getElementById(id);
+                
+                // 新增 "無" 選項
+                const optNone = document.createElement('option');
+                optNone.value = 0;
+                optNone.text = "🚫 無";
+                sel.add(optNone);
+
                 for(let i=1; i<=9; i++) {
                     const opt = document.createElement('option');
                     opt.value = i;
-                    opt.text = `No. ${i}`; // 讓文字跟按鈕風格統一
+                    opt.text = `No. ${i}`;
                     sel.add(opt);
                 }
-                // 設定預設值 (模擬經典題目)
+                // 設定預設值
                 if(idx===0) sel.value = 4;
                 if(idx===1) sel.value = 9;
                 if(idx===2) sel.value = 3;
@@ -252,7 +257,6 @@
                 btn.className = 'shape-btn';
                 btn.onclick = () => selectShape(index);
                 const imgPath = `images/shape_${index + 1}.png`;
-                // 精簡了 onerror，讓代碼更乾淨
                 btn.innerHTML = `
                     <img src="${imgPath}" alt="${shape.name}" onerror="this.style.display='none';this.parentElement.innerText='${shape.name}'">
                     <div class="shape-label">${shape.name}</div>
@@ -273,7 +277,8 @@
         }
 
         function validateTargets(targets) {
-            const ids = targets.map(t => t.id);
+            // 檢查重複時，忽略 ID 為 0 (無) 的項目
+            const ids = targets.map(t => t.id).filter(id => id !== 0);
             const uniqueIds = new Set(ids);
             if (uniqueIds.size !== ids.length) return "魔石編號不能重複！";
             return null;
@@ -309,13 +314,20 @@
             currentLayoutConfig = {};
             for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
             shape.active.forEach(pos => { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; });
+            
+            // 處理目標設定
             shape.targets.forEach((pos, idx) => {
                 const userBlock = targets[idx];
-                currentLayoutConfig[pos-1] = { 
-                    type: 'FIXED', 
-                    id: userBlock.id, 
-                    face: userBlock.face 
-                };
+                // 如果使用者選了「無」(0)，則該位置從 FIXED 降級為 SOLVE (變回問號)
+                if (userBlock.id === 0) {
+                    currentLayoutConfig[pos-1] = { type: 'SOLVE' };
+                } else {
+                    currentLayoutConfig[pos-1] = { 
+                        type: 'FIXED', 
+                        id: userBlock.id, 
+                        face: userBlock.face 
+                    };
+                }
             });
             renderGrid(true);
         }
@@ -447,7 +459,6 @@
                     div.style.borderColor = block.isFixed ? '#e74c3c' : '#555';
                     const imagePath = `images/block_${block.id}_${block.face}.png`;
                     const rot = block.rot * 90;
-                    // 優化圖片載入失敗時的顯示
                     div.innerHTML = `
                         <img src="${imagePath}" class="block-image" style="transform: rotate(${rot}deg);"
                              onerror="this.style.display='none'; this.parentNode.innerText='${block.face}${block.id}';">
