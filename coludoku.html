@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>色獨解題器 (圖形選單版)</title>
+    <title>色獨封印法典</title>
     <style>
+        /* --- 基礎設定 --- */
         body {
             font-family: "Microsoft JhengHei", Arial, sans-serif;
             background-color: #f0f2f5;
@@ -12,20 +13,21 @@
             flex-direction: column;
             align-items: center;
             padding: 20px;
+            margin: 0;
         }
 
-        h1 { margin-bottom: 10px; color: #333; }
+        h1 { margin-bottom: 10px; color: #333; letter-spacing: 2px; }
 
-        /* 控制面板容器 */
+        /* --- 控制面板 --- */
         .controls {
             margin-bottom: 20px;
             padding: 20px;
             background: white;
-            border-radius: 10px;
+            border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             text-align: center;
-            max-width: 800px;
-            width: 95%;
+            max-width: 600px; /* 限制最大寬度，比較好看 */
+            width: 90%;
         }
 
         .step-title {
@@ -38,11 +40,11 @@
             padding-bottom: 5px;
         }
 
-        /* 步驟 1: 目標選擇器 */
+        /* --- 目標選擇器 --- */
         .target-selection-area {
             display: flex;
             justify-content: center;
-            gap: 15px;
+            gap: 10px;
             flex-wrap: wrap;
             margin-bottom: 20px;
         }
@@ -52,13 +54,12 @@
             padding: 10px;
             border-radius: 8px;
             border: 1px solid #ddd;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100px;
+            width: 30%; /* 手機上自動排版 */
+            min-width: 90px;
+            box-sizing: border-box;
         }
 
-        .picker-label { font-size: 0.9rem; color: #7f8c8d; margin-bottom: 5px; }
+        .picker-label { font-size: 0.85rem; color: #7f8c8d; margin-bottom: 5px; font-weight: bold; }
 
         select {
             padding: 5px;
@@ -69,177 +70,138 @@
             font-size: 1rem;
         }
 
-        /* 步驟 2: 圖形按鈕 (改為圖片版) */
+        /* --- 圖形按鈕 (CSS Grid 優化) --- */
         .shape-selector {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 一列3個 */
-            gap: 15px;
-            justify-items: center;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
         }
 
         .shape-btn {
             background-color: white;
-            border: 3px solid #eee;
-            padding: 5px;
+            border: 2px solid #eee;
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.2s;
-            width: 100%;
-            max-width: 150px; /* 限制按鈕最大寬度 */
             aspect-ratio: 1 / 1; /* 保持正方形 */
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 5px;
         }
 
-        .shape-btn:hover {
-            border-color: #3498db;
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
+        .shape-btn:hover { border-color: #3498db; transform: translateY(-3px); }
+        .shape-btn.active { border-color: #f1c40f; background-color: #fffcf0; box-shadow: 0 0 8px rgba(241, 196, 15, 0.4); transform: scale(1.05); }
+        .shape-btn img { width: 80%; height: 80%; object-fit: contain; }
+        .shape-label { margin-top: 5px; font-size: 0.8rem; color: #555; font-weight: bold; }
 
-        .shape-btn.active {
-            border-color: #f1c40f; /* 選中時的金框 */
-            background-color: #fffcf0;
-            transform: scale(1.05);
-            box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
-        }
-
-        /* 按鈕內的圖片 */
-        .shape-btn img {
-            width: 80%;
-            height: 80%;
-            object-fit: contain;
-        }
-
-        /* 按鈕內的文字 (選用，輔助說明) */
-        .shape-label {
-            margin-top: 5px;
-            font-size: 0.8rem;
-            color: #555;
-            font-weight: bold;
-        }
-
-        /* 步驟 3: 執行按鈕 */
+        /* --- 執行按鈕與訊息 --- */
         .solve-btn {
             background-color: #2ecc71;
             color: white;
             border: none;
-            padding: 12px 50px;
-            font-size: 1.3rem;
+            padding: 12px 40px;
+            font-size: 1.2rem;
             border-radius: 50px;
             cursor: pointer;
-            transition: background 0.3s;
-            margin-top: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            margin-top: 15px;
+            box-shadow: 0 4px 6px rgba(46, 204, 113, 0.3);
+            width: 100%; /* 手機上好按 */
         }
-        .solve-btn:hover { background-color: #27ae60; transform: scale(1.05); }
-        .solve-btn:disabled { background-color: #95a5a6; cursor: not-allowed; transform: none; }
+        .solve-btn:active { transform: scale(0.98); }
+        .solve-btn:disabled { background-color: #95a5a6; cursor: not-allowed; box-shadow: none; }
+        
+        .status-msg { margin-top: 15px; font-weight: bold; min-height: 24px; font-size: 1.1rem; }
+        .error-msg { color: #e74c3c; }
+        .success-msg { color: #27ae60; }
 
-        /* 九宮格顯示 */
+        /* --- 九宮格 (關鍵優化：自適應寬度) --- */
         .main-grid {
             display: grid;
-            grid-template-columns: repeat(3, 120px);
-            grid-template-rows: repeat(3, 120px);
-            gap: 10px;
+            /* 這裡改成 1fr，讓格子自動填滿寬度，不會超出螢幕 */
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
             background-color: #333;
-            padding: 15px;
+            padding: 12px;
             border-radius: 15px;
+            width: 100%;
+            max-width: 400px; /* 限制電腦版最大寬度 */
+            aspect-ratio: 1 / 1; /* 保持整體正方形 */
+            box-sizing: border-box;
         }
 
         .block {
-            width: 120px;
-            height: 120px;
             background-color: #fff;
             border: 3px solid transparent;
             position: relative;
-            border-radius: 8px;
+            border-radius: 6px;
             overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
+            /* 讓每個格子自己也是正方形 */
+            aspect-ratio: 1 / 1; 
         }
 
-        .block-image {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            transition: transform 0.3s ease;
-        }
-
+        .block-image { width: 100%; height: 100%; object-fit: contain; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .block-info {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            pointer-events: none;
+            position: absolute; bottom: 2px; right: 2px;
+            background: rgba(0,0,0,0.6); color: white;
+            padding: 1px 4px; border-radius: 3px;
+            font-size: 0.7rem; pointer-events: none;
         }
-
-        .empty-slot { background-color: #f0f0f0; color: #ddd; font-weight: bold; font-size: 1.5rem; }
-        .status-msg { margin-top: 15px; font-weight: bold; min-height: 24px; }
-        .error-msg { color: #c0392b; }
-        .success-msg { color: #27ae60; }
-
-        /* RWD: 手機版調整圖形選單為 2 列 */
-        @media (max-width: 600px) {
-            .shape-selector { grid-template-columns: repeat(2, 1fr); }
-            .main-grid { grid-template-columns: repeat(3, 90px); grid-template-rows: repeat(3, 90px); }
-            .block { width: 90px; height: 90px; }
-        }
+        .empty-slot { background-color: #e0e0e0; color: #bbb; font-size: 1.5rem; }
 
     </style>
 </head>
 <body>
 
-    <h1>色獨封印法典 </h1>
+    <h1>🔮 色獨封印法典</h1>
     
     <div class="controls">
         
-        <div class="step-title">步驟 1：選擇目標魔石💎️</div>
+        <div class="step-title">步驟 1：選擇目標魔石 💎</div>
         <div class="target-selection-area">
             <div class="target-picker">
-                <div class="picker-label">目標 1</div>
+                <div class="picker-label">魔石 I</div>
                 <select id="t1-id" onchange="updatePreview()"></select>
                 <select id="t1-face" onchange="updatePreview()">
-                    <option value="B">B面 (黑)</option>
-                    <option value="W">W面 (白)</option>
+                    <option value="W" selected>W (白)</option>
+                    <option value="B">B (黑)</option>
                 </select>
             </div>
             <div class="target-picker">
-                <div class="picker-label">目標 2</div>
+                <div class="picker-label">魔石 II</div>
                 <select id="t2-id" onchange="updatePreview()"></select>
                 <select id="t2-face" onchange="updatePreview()">
-                    <option value="B">B面 (黑)</option>
-                    <option value="W" selected>W面 (白)</option>
+                    <option value="W" selected>W (白)</option>
+                    <option value="B">B (黑)</option>
                 </select>
             </div>
             <div class="target-picker">
-                <div class="picker-label">目標 3</div>
+                <div class="picker-label">魔石 III</div>
                 <select id="t3-id" onchange="updatePreview()"></select>
                 <select id="t3-face" onchange="updatePreview()">
-                    <option value="B" selected>B面 (黑)</option>
-                    <option value="W">W面 (白)</option>
+                    <option value="W">W (白)</option>
+                    <option value="B" selected>B (黑)</option>
                 </select>
             </div>
         </div>
 
-        <div class="step-title">步驟 2：選擇魔物🐙️法陣</div>
+        <div class="step-title">步驟 2：選擇封印法陣 🔯</div>
         <div class="shape-selector" id="shape-buttons">
             </div>
 
-        <div class="step-title">步驟 3：完成色獨封印🔯️</div>
+        <div class="step-title">步驟 3：詠唱咒語 🪄</div>
         <div id="status-text" class="status-msg">請完成設定...</div>
-        <button id="btn-solve" class="solve-btn" onclick="startSolving()">詠唱🪄咒語</button>
+        <button id="btn-solve" class="solve-btn" onclick="startSolving()">✨ 開始封印 ✨</button>
     </div>
 
     <div id="grid-container" class="main-grid"></div>
 
-<script>
+    <script>
         // --- 1. 資料庫 ---
         const BLOCKS = {
             1: { B: [[1,2],[3,4]], W: [[4,3],[6,5]] },
@@ -253,9 +215,8 @@
             9: { B: [[2,3],[4,5]], W: [[5,4],[1,6]] }
         };
 
-        // 定義圖形 (修正：X型目標改為 3, 5, 7)
         const SHAPES = [
-            { id: 1, name: "No.01", active: [1,3,5,7,9], targets: [3,5,7] }, // <--- 修改這裡
+            { id: 1, name: "No.01", active: [1,3,5,7,9], targets: [3,5,7] },
             { id: 2, name: "No.02", active: [2,4,6,7,8], targets: [2,6,7] },
             { id: 3, name: "No.03", active: [1,3,4,6,8], targets: [3,4,8] },
             { id: 4, name: "No.04", active: [1,2,5,8,9], targets: [1,5,9] },
@@ -266,19 +227,20 @@
         let currentLayoutConfig = {}; 
         let currentShapeIndex = 3; 
         let reservedIDs = new Set();
-        let currentBoard = Array(9).fill(null); // 移到全域變數方便管理
+        let currentBoard = Array(9).fill(null);
 
         // --- 2. 初始化 ---
         function init() {
-            // 填入下拉選單
+            // 填入下拉選單 (優化文字顯示)
             ['t1-id', 't2-id', 't3-id'].forEach((id, idx) => {
                 const sel = document.getElementById(id);
                 for(let i=1; i<=9; i++) {
                     const opt = document.createElement('option');
                     opt.value = i;
-                    opt.text = `${i}`;
+                    opt.text = `No. ${i}`; // 讓文字跟按鈕風格統一
                     sel.add(opt);
                 }
+                // 設定預設值 (模擬經典題目)
                 if(idx===0) sel.value = 4;
                 if(idx===1) sel.value = 9;
                 if(idx===2) sel.value = 3;
@@ -290,9 +252,9 @@
                 btn.className = 'shape-btn';
                 btn.onclick = () => selectShape(index);
                 const imgPath = `images/shape_${index + 1}.png`;
+                // 精簡了 onerror，讓代碼更乾淨
                 btn.innerHTML = `
-                    <img src="${imgPath}" alt="${shape.name}" 
-                         onerror="this.src='https://placehold.co/100x100?text=${shape.name}';">
+                    <img src="${imgPath}" alt="${shape.name}" onerror="this.style.display='none';this.parentElement.innerText='${shape.name}'">
                     <div class="shape-label">${shape.name}</div>
                 `;
                 btnContainer.appendChild(btn);
@@ -313,7 +275,7 @@
         function validateTargets(targets) {
             const ids = targets.map(t => t.id);
             const uniqueIds = new Set(ids);
-            if (uniqueIds.size !== ids.length) return "錯誤：目標魔石不能重複！";
+            if (uniqueIds.size !== ids.length) return "魔石編號不能重複！";
             return null;
         }
 
@@ -326,8 +288,7 @@
         }
 
         function updatePreview() {
-            // 1. 強制清空目前的盤面紀錄 (解決殘影問題) --- 關鍵修正
-            currentBoard = Array(9).fill(null);
+            currentBoard = Array(9).fill(null); // 清空盤面
 
             const targets = getUserTargets();
             const error = validateTargets(targets);
@@ -339,7 +300,7 @@
                 btnSolve.disabled = true;
                 return; 
             } else {
-                statusEl.innerHTML = "設定就緒";
+                statusEl.innerHTML = "法陣已就緒";
                 statusEl.className = "status-msg";
                 btnSolve.disabled = false;
             }
@@ -438,9 +399,8 @@
         let used = new Set();
 
         function startSolving() {
-            document.getElementById('status-text').innerHTML = "🔮️正在搜尋咒語...";
+            document.getElementById('status-text').innerHTML = "🔮 正在詠唱咒語...";
             
-            // 重置盤面
             currentBoard = Array(9).fill(null);
             used.clear();
             reservedIDs.clear();
@@ -461,7 +421,7 @@
                     document.getElementById('status-text').innerHTML = "<span class='success-msg'>✅ 封印成功！</span>";
                     renderGrid(false);
                 } else {
-                    document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 封印失敗 (試試其他魔石)</span>";
+                    document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 封印失敗 (魔力衝突)</span>";
                 }
             }, 50);
         }
@@ -487,6 +447,7 @@
                     div.style.borderColor = block.isFixed ? '#e74c3c' : '#555';
                     const imagePath = `images/block_${block.id}_${block.face}.png`;
                     const rot = block.rot * 90;
+                    // 優化圖片載入失敗時的顯示
                     div.innerHTML = `
                         <img src="${imagePath}" class="block-image" style="transform: rotate(${rot}deg);"
                              onerror="this.style.display='none'; this.parentNode.innerText='${block.face}${block.id}';">
@@ -503,9 +464,4 @@
         init();
     </script>
 </body>
-
 </html>
-
-
-
-
