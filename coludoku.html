@@ -200,7 +200,7 @@
     
     <div class="controls">
         
-        <div class="step-title">步驟 1：選擇目標魔石</div>
+        <div class="step-title">步驟 1：選擇目標魔石💎️</div>
         <div class="target-selection-area">
             <div class="target-picker">
                 <div class="picker-label">目標 1</div>
@@ -228,13 +228,13 @@
             </div>
         </div>
 
-        <div class="step-title">步驟 2：選擇魔物法陣</div>
+        <div class="step-title">步驟 2：選擇魔物🐙️法陣</div>
         <div class="shape-selector" id="shape-buttons">
             </div>
 
-        <div class="step-title">步驟 3：施咒色獨封印</div>
+        <div class="step-title">步驟 3：完成色獨封印🔯️</div>
         <div id="status-text" class="status-msg">請完成設定...</div>
-        <button id="btn-solve" class="solve-btn" onclick="startSolving()">🚀 計算解答</button>
+        <button id="btn-solve" class="solve-btn" onclick="startSolving()">詠唱🪄咒語</button>
     </div>
 
     <div id="grid-container" class="main-grid"></div>
@@ -313,7 +313,7 @@
         function validateTargets(targets) {
             const ids = targets.map(t => t.id);
             const uniqueIds = new Set(ids);
-            if (uniqueIds.size !== ids.length) return "錯誤：目標方塊編號不能重複！";
+            if (uniqueIds.size !== ids.length) return "錯誤：目標魔石不能重複！";
             return null;
         }
 
@@ -438,7 +438,7 @@
         let used = new Set();
 
         function startSolving() {
-            document.getElementById('status-text').innerHTML = "⏳ 正在搜尋解答...";
+            document.getElementById('status-text').innerHTML = "🔮️正在搜尋咒語...";
             
             // 重置盤面
             currentBoard = Array(9).fill(null);
@@ -458,10 +458,10 @@
 
             setTimeout(() => {
                 if (solve(currentBoard, used)) {
-                    document.getElementById('status-text').innerHTML = "<span class='success-msg'>✅ 解題成功！</span>";
+                    document.getElementById('status-text').innerHTML = "<span class='success-msg'>✅ 封印成功！</span>";
                     renderGrid(false);
                 } else {
-                    document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 無解 (嘗試過所有組合)</span>";
+                    document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 封印失敗 (試試其他魔石)</span>";
                 }
             }, 50);
         }
@@ -505,4 +505,5 @@
 </body>
 
 </html>
+
 
