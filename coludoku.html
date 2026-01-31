@@ -116,6 +116,7 @@
         .status-msg { margin-top: 15px; font-weight: bold; min-height: 24px; font-size: 1.1rem; }
         .error-msg { color: #e74c3c; }
         .success-msg { color: #27ae60; }
+        .multi-msg { color: #2980b9; }
 
         /* --- 九宮格 --- */
         .main-grid {
@@ -163,7 +164,7 @@
         <div class="step-title">步驟 1：選擇目標魔石 💎</div>
         <div class="target-selection-area">
             <div class="target-picker">
-                <div class="picker-label">魔石1</div>
+                <div class="picker-label">魔石 I</div>
                 <select id="t1-id" onchange="updatePreview()"></select>
                 <select id="t1-face" onchange="updatePreview()">
                     <option value="W" selected>W (白)</option>
@@ -171,7 +172,7 @@
                 </select>
             </div>
             <div class="target-picker">
-                <div class="picker-label">魔石2</div>
+                <div class="picker-label">魔石 II</div>
                 <select id="t2-id" onchange="updatePreview()"></select>
                 <select id="t2-face" onchange="updatePreview()">
                     <option value="W" selected>W (白)</option>
@@ -179,7 +180,7 @@
                 </select>
             </div>
             <div class="target-picker">
-                <div class="picker-label">魔石3</div>
+                <div class="picker-label">魔石 III</div>
                 <select id="t3-id" onchange="updatePreview()"></select>
                 <select id="t3-face" onchange="updatePreview()">
                     <option value="W">W (白)</option>
@@ -225,7 +226,11 @@
         let currentLayoutConfig = {}; 
         let currentShapeIndex = 3; 
         let reservedIDs = new Set();
-        let currentBoard = Array(9).fill(null);
+        
+        // 多重解法變數
+        let allSolutions = [];      // 儲存所有找到的解法
+        let currentSolIndex = 0;    // 目前顯示第幾個解法
+        let lastParamsHash = "";    // 用來判斷是否需要重新計算
 
         // --- 2. 初始化 ---
         function init() {
@@ -233,7 +238,6 @@
             ['t1-id', 't2-id', 't3-id'].forEach((id, idx) => {
                 const sel = document.getElementById(id);
                 
-                // 新增 "無" 選項
                 const optNone = document.createElement('option');
                 optNone.value = 0;
                 optNone.text = "🚫 無";
@@ -245,7 +249,6 @@
                     opt.text = `No. ${i}`;
                     sel.add(opt);
                 }
-                // 設定預設值
                 if(idx===0) sel.value = 4;
                 if(idx===1) sel.value = 9;
                 if(idx===2) sel.value = 3;
@@ -277,7 +280,6 @@
         }
 
         function validateTargets(targets) {
-            // 檢查重複時，忽略 ID 為 0 (無) 的項目
             const ids = targets.map(t => t.id).filter(id => id !== 0);
             const uniqueIds = new Set(ids);
             if (uniqueIds.size !== ids.length) return "魔石編號不能重複！";
@@ -293,12 +295,18 @@
         }
 
         function updatePreview() {
-            currentBoard = Array(9).fill(null); // 清空盤面
+            // 切換參數時，清空之前算的解法
+            allSolutions = [];
+            currentSolIndex = 0;
+            renderEmptyGrid();
 
             const targets = getUserTargets();
             const error = validateTargets(targets);
             const statusEl = document.getElementById('status-text');
             const btnSolve = document.getElementById('btn-solve');
+
+            // 重置按鈕文字
+            btnSolve.innerText = "✨ 開始封印 ✨";
 
             if (error) {
                 statusEl.innerHTML = `<span class="error-msg">${error}</span>`;
@@ -315,10 +323,8 @@
             for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
             shape.active.forEach(pos => { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; });
             
-            // 處理目標設定
             shape.targets.forEach((pos, idx) => {
                 const userBlock = targets[idx];
-                // 如果使用者選了「無」(0)，則該位置從 FIXED 降級為 SOLVE (變回問號)
                 if (userBlock.id === 0) {
                     currentLayoutConfig[pos-1] = { type: 'SOLVE' };
                 } else {
@@ -329,7 +335,7 @@
                     };
                 }
             });
-            renderGrid(true);
+            renderGrid(null, true);
         }
 
         // --- 4. 解題核心 ---
@@ -367,7 +373,11 @@
             return true;
         }
 
-        function solve(board, usedIDs) {
+        // 遞迴尋找所有解 (上限 20 個)
+        function solveAll(board, usedIDs) {
+            // 如果已經找到夠多解法，停止搜尋 (避免瀏覽器卡死)
+            if (allSolutions.length >= 20) return true;
+
             let slot = -1;
             for(let i=0; i<9; i++) {
                 const type = currentLayoutConfig[i].type;
@@ -376,7 +386,12 @@
                 }
             }
 
-            if (slot === -1) return true;
+            // 找到一個解！
+            if (slot === -1) {
+                // 深拷貝目前的盤面並存入結果陣列
+                allSolutions.push(JSON.parse(JSON.stringify(board)));
+                return false; // 返回 false 讓迴圈繼續尋找下一個解
+            }
 
             const config = currentLayoutConfig[slot];
             let candidates = [];
@@ -398,7 +413,7 @@
                     
                     if (isValid(board)) {
                         usedIDs.add(cand.id);
-                        if (solve(board, usedIDs)) return true;
+                        if (solveAll(board, usedIDs)) return true; // 如果滿了就停止
                         usedIDs.delete(cand.id);
                     }
                     board[slot] = null;
@@ -408,43 +423,85 @@
         }
 
         // --- 5. 執行與渲染 ---
-        let used = new Set();
-
+        
         function startSolving() {
-            document.getElementById('status-text').innerHTML = "🔮 正在詠唱咒語...";
-            
-            currentBoard = Array(9).fill(null);
-            used.clear();
-            reservedIDs.clear();
-
             const targets = getUserTargets();
-            if(validateTargets(targets)) return;
+            // 產生一個特徵字串來判斷參數是否改變
+            const currentParamsHash = JSON.stringify(targets) + currentShapeIndex;
 
-            // 鎖定保留 ID
-            for(let i=0; i<9; i++) {
-                const config = currentLayoutConfig[i];
-                if(config.type === 'FIXED') {
-                    reservedIDs.add(config.id);
+            // 判斷是「新計算」還是「切換下一個解」
+            if (currentParamsHash !== lastParamsHash || allSolutions.length === 0) {
+                // --- 新計算 ---
+                document.getElementById('status-text').innerHTML = "🔮 正在詠唱咒語...";
+                if(validateTargets(targets)) return;
+
+                let board = Array(9).fill(null);
+                let used = new Set();
+                reservedIDs.clear();
+                allSolutions = []; // 清空舊解
+
+                // 鎖定保留 ID
+                for(let i=0; i<9; i++) {
+                    const config = currentLayoutConfig[i];
+                    if(config.type === 'FIXED') {
+                        reservedIDs.add(config.id);
+                    }
                 }
+
+                setTimeout(() => {
+                    solveAll(board, used); // 計算所有解
+
+                    if (allSolutions.length > 0) {
+                        currentSolIndex = 0;
+                        lastParamsHash = currentParamsHash; // 紀錄目前參數
+                        updateStatusAndRender();
+                    } else {
+                        document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 封印失敗 (魔力衝突)</span>";
+                        document.getElementById('btn-solve').innerText = "✨ 開始封印 ✨";
+                    }
+                }, 50);
+
+            } else {
+                // --- 切換下一個解 ---
+                currentSolIndex++;
+                if (currentSolIndex >= allSolutions.length) {
+                    currentSolIndex = 0; // 循環回到第一個
+                }
+                updateStatusAndRender();
             }
-
-            setTimeout(() => {
-                if (solve(currentBoard, used)) {
-                    document.getElementById('status-text').innerHTML = "<span class='success-msg'>✅ 封印成功！</span>";
-                    renderGrid(false);
-                } else {
-                    document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 封印失敗 (魔力衝突)</span>";
-                }
-            }, 50);
         }
 
-        function renderGrid(isPreview) {
+        function updateStatusAndRender() {
+            const total = allSolutions.length;
+            const current = currentSolIndex + 1;
+            const btn = document.getElementById('btn-solve');
+            const status = document.getElementById('status-text');
+
+            renderGrid(allSolutions[currentSolIndex], false);
+
+            if (total === 1) {
+                status.innerHTML = "<span class='success-msg'>✅ 封印成功 (唯一解)</span>";
+                btn.innerText = "✨ 唯一解 ✨";
+            } else {
+                let countText = total >= 20 ? "20+" : total;
+                status.innerHTML = `<span class='multi-msg'>✅ 封印成功 (第 ${current} / ${countText} 種解法)</span>`;
+                btn.innerText = "➡️ 換一種解法";
+            }
+        }
+
+        function renderEmptyGrid() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            // 這裡可以放預設空盤，或直接呼叫 renderGrid(null, true)
+        }
+
+        function renderGrid(boardData, isPreview) {
             const container = document.getElementById('grid-container');
             container.innerHTML = '';
 
             for(let i=0; i<9; i++) {
                 const config = currentLayoutConfig[i];
-                let block = currentBoard[i];
+                let block = boardData ? boardData[i] : null;
                 const div = document.createElement('div');
                 div.className = 'block';
 
