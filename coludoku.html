@@ -324,8 +324,7 @@
                 if(idx===2) sel.value = 3;
             });
 
-            // 修正重點：初始化時先載入 Level 1，並且選中第一個形狀 (ID=1)
-            // 這一步非常重要，否則 currentLayoutConfig 會是空的，導致一按計算就崩潰
+            // 初始化時先載入 Level 1，並且選中第一個形狀 (ID=1)
             filterShapesByLevel(1);
             selectShape(1); 
         }
@@ -360,9 +359,8 @@
                 btnContainer.appendChild(btn);
             });
             
-            // 自動選取該等級的第一個圖形，防止使用者只切換等級卻沒選圖形
+            // 自動選取該等級的第一個圖形
             if (levelShapes.length > 0) {
-                 // 檢查目前選的圖形是否在新的 Level 裡，如果不在，就預設選第一個
                  const isCurrentInLevel = levelShapes.some(s => s.id === currentShapeID);
                  if (!isCurrentInLevel) {
                      selectShape(levelShapes[0].id);
@@ -390,11 +388,10 @@
         function selectShape(id) {
             currentShapeID = id;
             
-            // 更新 UI
             const buttons = document.querySelectorAll('.shape-btn');
             buttons.forEach(b => b.classList.remove('active'));
+            
             buttons.forEach(btn => {
-                // 簡單的比對方式
                 if(btn.innerText.includes(SHAPES.find(s=>s.id===id).name)) {
                     btn.classList.add('active');
                 }
@@ -482,11 +479,11 @@
         }
 
         function solveAll(board, usedIDs) {
-            if (allSolutions.length >= 20) return true;
+            // --- 關鍵修改：將上限從 20 改為 72 ---
+            if (allSolutions.length >= 72) return true;
 
             let slot = -1;
             for(let i=0; i<9; i++) {
-                // 安全檢查，防止 config 為 undefined
                 if (!currentLayoutConfig[i]) continue;
                 
                 const type = currentLayoutConfig[i].type;
@@ -544,7 +541,6 @@
                 reservedIDs.clear();
                 allSolutions = []; 
 
-                // 安全檢查：確保設定已載入
                 if (Object.keys(currentLayoutConfig).length === 0) {
                      alert("請先選擇一個圖形！");
                      return;
@@ -591,7 +587,8 @@
                 status.innerHTML = "<span class='success-msg'>✅ 封印成功 (唯一解)</span>";
                 btn.innerText = "✨ 唯一解 ✨";
             } else {
-                let countText = total >= 20 ? "20+" : total;
+                // --- 關鍵修改：顯示上限文字 ---
+                let countText = total >= 72 ? "72+" : total;
                 status.innerHTML = `<span class='multi-msg'>✅ 封印成功 (第 ${current} / ${countText} 種解法)</span>`;
                 btn.innerText = "➡️ 換一種解法";
             }
