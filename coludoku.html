@@ -433,3 +433,190 @@
                     };
                 }
             });
+            renderGrid(null, true);
+        }
+
+        // --- 4. 解題核心 ---
+        function getRotatedMatrix(matrix, times) {
+            let m = JSON.parse(JSON.stringify(matrix));
+            for (let t = 0; t < times; t++) {
+                const newM = [[0,0],[0,0]];
+                newM[0][1] = m[0][0]; newM[1][1] = m[0][1];
+                newM[1][0] = m[1][1]; newM[0][0] = m[1][0];
+                m = newM;
+            }
+            return m;
+        }
+
+        function isValid(boardState) {
+            let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
+            for(let i=0; i<9; i++) {
+                if(!boardState[i]) continue;
+                let b = boardState[i];
+                let baseRow = Math.floor(i / 3) * 2;
+                let baseCol = (i % 3) * 2;
+                let matrix = getRotatedMatrix(BLOCKS[b.id][b.face], b.rot);
+                fullGrid[baseRow][baseCol] = matrix[0][0]; fullGrid[baseRow][baseCol+1] = matrix[0][1];
+                fullGrid[baseRow+1][baseCol] = matrix[1][0]; fullGrid[baseRow+1][baseCol+1] = matrix[1][1];
+            }
+            for (let i = 0; i < 6; i++) {
+                let rowSeen = new Set(), colSeen = new Set();
+                for (let j = 0; j < 6; j++) {
+                    let rVal = fullGrid[i][j];
+                    if (rVal !== 0) { if (rowSeen.has(rVal)) return false; rowSeen.add(rVal); }
+                    let cVal = fullGrid[j][i];
+                    if (cVal !== 0) { if (colSeen.has(cVal)) return false; colSeen.add(cVal); }
+                }
+            }
+            return true;
+        }
+
+        function solveAll(board, usedIDs) {
+            if (allSolutions.length >= 20) return true;
+
+            let slot = -1;
+            for(let i=0; i<9; i++) {
+                const type = currentLayoutConfig[i].type;
+                if(board[i] === null && (type === 'SOLVE' || type === 'FIXED')) {
+                    slot = i; break;
+                }
+            }
+
+            if (slot === -1) {
+                allSolutions.push(JSON.parse(JSON.stringify(board)));
+                return false; 
+            }
+
+            const config = currentLayoutConfig[slot];
+            let candidates = [];
+
+            if (config.type === 'FIXED') {
+                candidates.push({ id: config.id, face: config.face, isFixed: true });
+            } else {
+                for (let id = 1; id <= 9; id++) {
+                    if (!usedIDs.has(id) && !reservedIDs.has(id)) {
+                        candidates.push({ id: id, face: 'B', isFixed: false });
+                        candidates.push({ id: id, face: 'W', isFixed: false });
+                    }
+                }
+            }
+
+            for (let cand of candidates) {
+                for (let rot = 0; rot < 4; rot++) {
+                    board[slot] = { id: cand.id, face: cand.face, rot: rot, isFixed: cand.isFixed };
+                    
+                    if (isValid(board)) {
+                        usedIDs.add(cand.id);
+                        if (solveAll(board, usedIDs)) return true; 
+                        usedIDs.delete(cand.id);
+                    }
+                    board[slot] = null;
+                }
+            }
+            return false;
+        }
+
+        // --- 5. 執行與渲染 ---
+        
+        function startSolving() {
+            const targets = getUserTargets();
+            const currentParamsHash = JSON.stringify(targets) + currentShapeID;
+
+            if (currentParamsHash !== lastParamsHash || allSolutions.length === 0) {
+                document.getElementById('status-text').innerHTML = "🔮 正在詠唱咒語...";
+                if(validateTargets(targets)) return;
+
+                let board = Array(9).fill(null);
+                let used = new Set();
+                reservedIDs.clear();
+                allSolutions = []; 
+
+                for(let i=0; i<9; i++) {
+                    const config = currentLayoutConfig[i];
+                    if(config.type === 'FIXED') {
+                        reservedIDs.add(config.id);
+                    }
+                }
+
+                setTimeout(() => {
+                    solveAll(board, used); 
+
+                    if (allSolutions.length > 0) {
+                        currentSolIndex = 0;
+                        lastParamsHash = currentParamsHash; 
+                        updateStatusAndRender();
+                    } else {
+                        document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 封印失敗 (魔力衝突)</span>";
+                        document.getElementById('btn-solve').innerText = "✨ 開始封印 ✨";
+                    }
+                }, 50);
+
+            } else {
+                currentSolIndex++;
+                if (currentSolIndex >= allSolutions.length) {
+                    currentSolIndex = 0; 
+                }
+                updateStatusAndRender();
+            }
+        }
+
+        function updateStatusAndRender() {
+            const total = allSolutions.length;
+            const current = currentSolIndex + 1;
+            const btn = document.getElementById('btn-solve');
+            const status = document.getElementById('status-text');
+
+            renderGrid(allSolutions[currentSolIndex], false);
+
+            if (total === 1) {
+                status.innerHTML = "<span class='success-msg'>✅ 封印成功 (唯一解)</span>";
+                btn.innerText = "✨ 唯一解 ✨";
+            } else {
+                let countText = total >= 20 ? "20+" : total;
+                status.innerHTML = `<span class='multi-msg'>✅ 封印成功 (第 ${current} / ${countText} 種解法)</span>`;
+                btn.innerText = "➡️ 換一種解法";
+            }
+        }
+
+        function renderEmptyGrid() {
+            renderGrid(null, true);
+        }
+
+        function renderGrid(boardData, isPreview) {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+
+            for(let i=0; i<9; i++) {
+                const config = currentLayoutConfig[i];
+                let block = boardData ? boardData[i] : null;
+                const div = document.createElement('div');
+                div.className = 'block';
+
+                if (isPreview && config.type === 'FIXED') {
+                    block = { id: config.id, face: config.face, rot: 0, isFixed: true };
+                }
+
+                if (config.type === 'EMPTY') {
+                    div.classList.add('empty-slot');
+                } 
+                else if (block) {
+                    div.style.borderColor = block.isFixed ? '#e74c3c' : '#555';
+                    const imagePath = `images/block_${block.id}_${block.face}.png`;
+                    const rot = block.rot * 90;
+                    div.innerHTML = `
+                        <img src="${imagePath}" class="block-image" style="transform: rotate(${rot}deg);"
+                             onerror="this.style.display='none'; this.parentNode.innerText='${block.face}${block.id}';">
+                        <div class="block-info">${block.face}${block.id}</div>
+                    `;
+                }
+                else if (config.type === 'SOLVE') {
+                    div.innerHTML = '<span style="color:#ccc; font-size:2rem;">?</span>';
+                }
+                container.appendChild(div);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
