@@ -94,7 +94,7 @@
         }
 
         .level-btn:hover { background-color: #ddd; color: #333; }
-        .level-btn.active { background-color: #3498db; color: white; shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .level-btn.active { background-color: #3498db; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
 
         /* --- 圖形按鈕 --- */
@@ -251,44 +251,43 @@
             9: { B: [[2,3],[4,5]], W: [[5,4],[1,6]] }
         };
 
-        // 擴充至 36 題，包含等級資訊 (Level)
         const SHAPES = [
-            // Level I (1-6)
+            // Level I (001-006)
             { id: 1, name: "No.001", level: 1, active: [1,3,5,7,9], targets: [3,5,7] },
             { id: 2, name: "No.002", level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
             { id: 3, name: "No.003", level: 1, active: [1,3,4,6,8], targets: [3,4,8] },
             { id: 4, name: "No.004", level: 1, active: [1,3,5,7,9], targets: [1,5,9] },
             { id: 5, name: "No.005", level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
             { id: 6, name: "No.006", level: 1, active: [1,3,4,6,8], targets: [3,4,8] },
-            // Level II (7-12)
+            // Level II (007-012)
             { id: 7, name: "No.007", level: 2, active: [1,2,5,8,9], targets: [1,5,9] },
             { id: 8, name: "No.008", level: 2, active: [2,4,5,8,9], targets: [2,4,9] },
             { id: 9, name: "No.009", level: 2, active: [2,3,4,6,9], targets: [2,4,9] },
             { id: 10, name: "No.010", level: 2, active: [1,2,5,8,9], targets: [1,5,9] },
             { id: 11, name: "No.011", level: 2, active: [2,4,5,8,9], targets: [2,4,9] },
             { id: 12, name: "No.012", level: 2, active: [2,3,4,6,9], targets: [2,4,9] },
-            // Level III (13-18)
+            // Level III (013-018)
             { id: 13, name: "No.013", level: 3, active: [2,3,4,5,7,8], targets: [3,5,7] },
             { id: 14, name: "No.014", level: 3, active: [1,2,4,6,7,9], targets: [2,6,7] },
             { id: 15, name: "No.015", level: 3, active: [3,4,5,7,8,9], targets: [3,4,8] },
             { id: 16, name: "No.016", level: 3, active: [2,3,4,5,7,8], targets: [3,5,7] },
             { id: 17, name: "No.017", level: 3, active: [2,4,6,7,8,9], targets: [2,6,7] },
             { id: 18, name: "No.018", level: 3, active: [3,4,5,7,8,9], targets: [3,4,8] },
-            // Level IV (19-24)
+            // Level IV (019-024)
             { id: 19, name: "No.019", level: 4, active: [1,3,5,7,8,9], targets: [3,5,7] },
             { id: 20, name: "No.020", level: 4, active: [2,4,5,6,7,9], targets: [2,4,9] },
             { id: 21, name: "No.021", level: 4, active: [2,4,5,6,7,9], targets: [2,4,9] },
             { id: 22, name: "No.022", level: 4, active: [1,3,5,7,8,9], targets: [3,5,7] },
             { id: 23, name: "No.023", level: 4, active: [2,4,5,6,7,9], targets: [2,6,7] },
             { id: 24, name: "No.024", level: 4, active: [2,4,5,6,7,9], targets: [2,6,7] },
-            // Level V (25-30)
+            // Level V (025-030)
             { id: 25, name: "No.025", level: 5, active: [1,3,5,6,7,8,9], targets: [3,5,7] },
             { id: 26, name: "No.026", level: 5, active: [2,3,4,5,6,7,8], targets: [2,6,7] },
             { id: 27, name: "No.027", level: 5, active: [2,3,4,6,7,8,9], targets: [3,4,8] },
             { id: 28, name: "No.028", level: 5, active: [1,3,5,6,7,8,9], targets: [1,5,9] },
             { id: 29, name: "No.029", level: 5, active: [2,3,4,5,6,7,8], targets: [3,4,8] },
             { id: 30, name: "No.030", level: 5, active: [2,3,4,6,7,8,9], targets: [2,6,7] },
-            // Level VI (31-36)
+            // Level VI (031-036)
             { id: 31, name: "No.031", level: 6, active: [1,3,4,5,6,7,8,9], targets: [3,5,7] },
             { id: 32, name: "No.032", level: 6, active: [1,2,3,4,6,7,8,9], targets: [2,6,7] },
             { id: 33, name: "No.033", level: 6, active: [2,3,4,5,6,7,8,9], targets: [3,4,8] },
@@ -298,7 +297,7 @@
         ];
 
         let currentLayoutConfig = {}; 
-        let currentShapeID = 1; // 使用 ID 來追蹤目前的圖形
+        let currentShapeID = 1; 
         let reservedIDs = new Set();
         let allSolutions = [];      
         let currentSolIndex = 0;    
@@ -325,11 +324,13 @@
                 if(idx===2) sel.value = 3;
             });
 
-            // 預設顯示 Level 1
+            // 修正重點：初始化時先載入 Level 1，並且選中第一個形狀 (ID=1)
+            // 這一步非常重要，否則 currentLayoutConfig 會是空的，導致一按計算就崩潰
             filterShapesByLevel(1);
+            selectShape(1); 
         }
 
-        // --- Level Filter Function (核心修正：支援 3 位數檔名) ---
+        // --- Level Filter Function ---
         function filterShapesByLevel(level) {
             const levelBtns = document.querySelectorAll('.level-btn');
             levelBtns.forEach((btn, idx) => {
@@ -349,7 +350,6 @@
 
                 btn.onclick = () => selectShape(shape.id);
                 
-                // --- 關鍵修正：將 ID 轉為 3 位數 (001, 002... 036) ---
                 const paddedID = String(shape.id).padStart(3, '0');
                 const imgPath = `images/shape_${paddedID}.png`;
                 
@@ -359,6 +359,15 @@
                 `;
                 btnContainer.appendChild(btn);
             });
+            
+            // 自動選取該等級的第一個圖形，防止使用者只切換等級卻沒選圖形
+            if (levelShapes.length > 0) {
+                 // 檢查目前選的圖形是否在新的 Level 裡，如果不在，就預設選第一個
+                 const isCurrentInLevel = levelShapes.some(s => s.id === currentShapeID);
+                 if (!isCurrentInLevel) {
+                     selectShape(levelShapes[0].id);
+                 }
+            }
         }
 
 
@@ -381,10 +390,11 @@
         function selectShape(id) {
             currentShapeID = id;
             
+            // 更新 UI
             const buttons = document.querySelectorAll('.shape-btn');
             buttons.forEach(b => b.classList.remove('active'));
-            
             buttons.forEach(btn => {
+                // 簡單的比對方式
                 if(btn.innerText.includes(SHAPES.find(s=>s.id===id).name)) {
                     btn.classList.add('active');
                 }
@@ -476,6 +486,9 @@
 
             let slot = -1;
             for(let i=0; i<9; i++) {
+                // 安全檢查，防止 config 為 undefined
+                if (!currentLayoutConfig[i]) continue;
+                
                 const type = currentLayoutConfig[i].type;
                 if(board[i] === null && (type === 'SOLVE' || type === 'FIXED')) {
                     slot = i; break;
@@ -531,9 +544,15 @@
                 reservedIDs.clear();
                 allSolutions = []; 
 
+                // 安全檢查：確保設定已載入
+                if (Object.keys(currentLayoutConfig).length === 0) {
+                     alert("請先選擇一個圖形！");
+                     return;
+                }
+
                 for(let i=0; i<9; i++) {
                     const config = currentLayoutConfig[i];
-                    if(config.type === 'FIXED') {
+                    if(config && config.type === 'FIXED') {
                         reservedIDs.add(config.id);
                     }
                 }
@@ -592,11 +611,11 @@
                 const div = document.createElement('div');
                 div.className = 'block';
 
-                if (isPreview && config.type === 'FIXED') {
+                if (isPreview && config && config.type === 'FIXED') {
                     block = { id: config.id, face: config.face, rot: 0, isFixed: true };
                 }
 
-                if (config.type === 'EMPTY') {
+                if (config && config.type === 'EMPTY') {
                     div.classList.add('empty-slot');
                 } 
                 else if (block) {
@@ -609,7 +628,7 @@
                         <div class="block-info">${block.face}${block.id}</div>
                     `;
                 }
-                else if (config.type === 'SOLVE') {
+                else if (config && config.type === 'SOLVE') {
                     div.innerHTML = '<span style="color:#ccc; font-size:2rem;">?</span>';
                 }
                 container.appendChild(div);
