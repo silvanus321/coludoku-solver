@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>色獨封印法典</title>
+    <title>色獨封印法典 (完整版)</title>
     <style>
         /* --- 基礎設定 --- */
         body {
@@ -69,6 +69,33 @@
             margin-bottom: 5px;
             font-size: 1rem;
         }
+
+        /* --- 等級選擇器 --- */
+        .level-selector {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            background: #eee;
+            padding: 5px;
+            border-radius: 8px;
+        }
+
+        .level-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 8px 0;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: bold;
+            color: #666;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .level-btn:hover { background-color: #ddd; color: #333; }
+        .level-btn.active { background-color: #3498db; color: white; shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
 
         /* --- 圖形按鈕 --- */
         .shape-selector {
@@ -189,7 +216,17 @@
             </div>
         </div>
 
-        <div class="step-title">步驟 2：選擇封印法陣 🔯</div>
+        <div class="step-title">步驟 2：選擇法陣等級 🔯</div>
+        
+        <div class="level-selector" id="level-buttons">
+            <button class="level-btn" onclick="filterShapesByLevel(1)">Level I</button>
+            <button class="level-btn" onclick="filterShapesByLevel(2)">II</button>
+            <button class="level-btn" onclick="filterShapesByLevel(3)">III</button>
+            <button class="level-btn" onclick="filterShapesByLevel(4)">IV</button>
+            <button class="level-btn" onclick="filterShapesByLevel(5)">V</button>
+            <button class="level-btn" onclick="filterShapesByLevel(6)">VI</button>
+        </div>
+
         <div class="shape-selector" id="shape-buttons">
             </div>
 
@@ -214,30 +251,64 @@
             9: { B: [[2,3],[4,5]], W: [[5,4],[1,6]] }
         };
 
+        // 擴充至 36 題，包含等級資訊 (Level)
         const SHAPES = [
-            { id: 1, name: "No.01", active: [1,3,5,7,9], targets: [3,5,7] },
-            { id: 2, name: "No.02", active: [2,4,6,7,8], targets: [2,6,7] },
-            { id: 3, name: "No.03", active: [1,3,4,6,8], targets: [3,4,8] },
-            { id: 4, name: "No.04", active: [1,2,5,8,9], targets: [1,5,9] },
-            { id: 5, name: "No.05", active: [2,4,5,8,9], targets: [2,4,9] },
-            { id: 6, name: "No.06", active: [2,3,4,6,9], targets: [2,4,9] }
+            // Level I (1-6)
+            { id: 1, name: "No.001", level: 1, active: [1,3,5,7,9], targets: [3,5,7] },
+            { id: 2, name: "No.002", level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
+            { id: 3, name: "No.003", level: 1, active: [1,3,4,6,8], targets: [3,4,8] },
+            { id: 4, name: "No.004", level: 1, active: [1,3,5,7,9], targets: [1,5,9] },
+            { id: 5, name: "No.005", level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
+            { id: 6, name: "No.006", level: 1, active: [1,3,4,6,8], targets: [3,4,8] },
+            // Level II (7-12)
+            { id: 7, name: "No.007", level: 2, active: [1,2,5,8,9], targets: [1,5,9] },
+            { id: 8, name: "No.008", level: 2, active: [2,4,5,8,9], targets: [2,4,9] },
+            { id: 9, name: "No.009", level: 2, active: [2,3,4,6,9], targets: [2,4,9] },
+            { id: 10, name: "No.010", level: 2, active: [1,2,5,8,9], targets: [1,5,9] },
+            { id: 11, name: "No.011", level: 2, active: [2,4,5,8,9], targets: [2,4,9] },
+            { id: 12, name: "No.012", level: 2, active: [2,3,4,6,9], targets: [2,4,9] },
+            // Level III (13-18)
+            { id: 13, name: "No.013", level: 3, active: [2,3,4,5,7,8], targets: [3,5,7] },
+            { id: 14, name: "No.014", level: 3, active: [1,2,4,6,7,9], targets: [2,6,7] },
+            { id: 15, name: "No.015", level: 3, active: [3,4,5,7,8,9], targets: [3,4,8] },
+            { id: 16, name: "No.016", level: 3, active: [2,3,4,5,7,8], targets: [3,5,7] },
+            { id: 17, name: "No.017", level: 3, active: [2,4,6,7,8,9], targets: [2,6,7] },
+            { id: 18, name: "No.018", level: 3, active: [3,4,5,7,8,9], targets: [3,4,8] },
+            // Level IV (19-24)
+            { id: 19, name: "No.019", level: 4, active: [1,3,5,7,8,9], targets: [3,5,7] },
+            { id: 20, name: "No.020", level: 4, active: [2,4,5,6,7,9], targets: [2,4,9] },
+            { id: 21, name: "No.021", level: 4, active: [2,4,5,6,7,9], targets: [2,4,9] },
+            { id: 22, name: "No.022", level: 4, active: [1,3,5,7,8,9], targets: [3,5,7] },
+            { id: 23, name: "No.023", level: 4, active: [2,4,5,6,7,9], targets: [2,6,7] },
+            { id: 24, name: "No.024", level: 4, active: [2,4,5,6,7,9], targets: [2,6,7] },
+            // Level V (25-30)
+            { id: 25, name: "No.025", level: 5, active: [1,3,5,6,7,8,9], targets: [3,5,7] },
+            { id: 26, name: "No.026", level: 5, active: [2,3,4,5,6,7,8], targets: [2,6,7] },
+            { id: 27, name: "No.027", level: 5, active: [2,3,4,6,7,8,9], targets: [3,4,8] },
+            { id: 28, name: "No.028", level: 5, active: [1,3,5,6,7,8,9], targets: [1,5,9] },
+            { id: 29, name: "No.029", level: 5, active: [2,3,4,5,6,7,8], targets: [3,4,8] },
+            { id: 30, name: "No.030", level: 5, active: [2,3,4,6,7,8,9], targets: [2,6,7] },
+            // Level VI (31-36)
+            { id: 31, name: "No.031", level: 6, active: [1,3,4,5,6,7,8,9], targets: [3,5,7] },
+            { id: 32, name: "No.032", level: 6, active: [1,2,3,4,6,7,8,9], targets: [2,6,7] },
+            { id: 33, name: "No.033", level: 6, active: [2,3,4,5,6,7,8,9], targets: [3,4,8] },
+            { id: 34, name: "No.034", level: 6, active: [1,3,4,5,6,7,8,9], targets: [3,4,8] },
+            { id: 35, name: "No.035", level: 6, active: [1,2,3,4,6,7,8,9], targets: [2,4,9] },
+            { id: 36, name: "No.036", level: 6, active: [2,3,4,5,6,7,8,9], targets: [3,5,7] }
         ];
 
         let currentLayoutConfig = {}; 
-        let currentShapeIndex = 3; 
+        let currentShapeID = 1; // 使用 ID 來追蹤目前的圖形
         let reservedIDs = new Set();
-        
-        // 多重解法變數
-        let allSolutions = [];      // 儲存所有找到的解法
-        let currentSolIndex = 0;    // 目前顯示第幾個解法
-        let lastParamsHash = "";    // 用來判斷是否需要重新計算
+        let allSolutions = [];      
+        let currentSolIndex = 0;    
+        let lastParamsHash = "";    
 
         // --- 2. 初始化 ---
         function init() {
             // 填入下拉選單
             ['t1-id', 't2-id', 't3-id'].forEach((id, idx) => {
                 const sel = document.getElementById(id);
-                
                 const optNone = document.createElement('option');
                 optNone.value = 0;
                 optNone.text = "🚫 無";
@@ -254,21 +325,42 @@
                 if(idx===2) sel.value = 3;
             });
 
+            // 預設顯示 Level 1
+            filterShapesByLevel(1);
+        }
+
+        // --- Level Filter Function (核心修正：支援 3 位數檔名) ---
+        function filterShapesByLevel(level) {
+            const levelBtns = document.querySelectorAll('.level-btn');
+            levelBtns.forEach((btn, idx) => {
+                if (idx + 1 === level) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+
             const btnContainer = document.getElementById('shape-buttons');
-            SHAPES.forEach((shape, index) => {
+            btnContainer.innerHTML = ''; 
+
+            const levelShapes = SHAPES.filter(s => s.level === level);
+            
+            levelShapes.forEach((shape) => {
                 const btn = document.createElement('div');
                 btn.className = 'shape-btn';
-                btn.onclick = () => selectShape(index);
-                const imgPath = `images/shape_${index + 1}.png`;
+                if(shape.id === currentShapeID) btn.classList.add('active');
+
+                btn.onclick = () => selectShape(shape.id);
+                
+                // --- 關鍵修正：將 ID 轉為 3 位數 (001, 002... 036) ---
+                const paddedID = String(shape.id).padStart(3, '0');
+                const imgPath = `images/shape_${paddedID}.png`;
+                
                 btn.innerHTML = `
                     <img src="${imgPath}" alt="${shape.name}" onerror="this.style.display='none';this.parentElement.innerText='${shape.name}'">
                     <div class="shape-label">${shape.name}</div>
                 `;
                 btnContainer.appendChild(btn);
             });
-
-            selectShape(3);
         }
+
 
         // --- 3. UI 互動 ---
         function getUserTargets() {
@@ -286,16 +378,22 @@
             return null;
         }
 
-        function selectShape(index) {
-            currentShapeIndex = index;
+        function selectShape(id) {
+            currentShapeID = id;
+            
             const buttons = document.querySelectorAll('.shape-btn');
             buttons.forEach(b => b.classList.remove('active'));
-            buttons[index].classList.add('active');
+            
+            buttons.forEach(btn => {
+                if(btn.innerText.includes(SHAPES.find(s=>s.id===id).name)) {
+                    btn.classList.add('active');
+                }
+            });
+
             updatePreview();
         }
 
         function updatePreview() {
-            // 切換參數時，清空之前算的解法
             allSolutions = [];
             currentSolIndex = 0;
             renderEmptyGrid();
@@ -305,7 +403,6 @@
             const statusEl = document.getElementById('status-text');
             const btnSolve = document.getElementById('btn-solve');
 
-            // 重置按鈕文字
             btnSolve.innerText = "✨ 開始封印 ✨";
 
             if (error) {
@@ -318,7 +415,8 @@
                 btnSolve.disabled = false;
             }
 
-            const shape = SHAPES[currentShapeIndex];
+            const shape = SHAPES.find(s => s.id === currentShapeID);
+            
             currentLayoutConfig = {};
             for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
             shape.active.forEach(pos => { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; });
@@ -335,201 +433,3 @@
                     };
                 }
             });
-            renderGrid(null, true);
-        }
-
-        // --- 4. 解題核心 ---
-        function getRotatedMatrix(matrix, times) {
-            let m = JSON.parse(JSON.stringify(matrix));
-            for (let t = 0; t < times; t++) {
-                const newM = [[0,0],[0,0]];
-                newM[0][1] = m[0][0]; newM[1][1] = m[0][1];
-                newM[1][0] = m[1][1]; newM[0][0] = m[1][0];
-                m = newM;
-            }
-            return m;
-        }
-
-        function isValid(boardState) {
-            let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
-            for(let i=0; i<9; i++) {
-                if(!boardState[i]) continue;
-                let b = boardState[i];
-                let baseRow = Math.floor(i / 3) * 2;
-                let baseCol = (i % 3) * 2;
-                let matrix = getRotatedMatrix(BLOCKS[b.id][b.face], b.rot);
-                fullGrid[baseRow][baseCol] = matrix[0][0]; fullGrid[baseRow][baseCol+1] = matrix[0][1];
-                fullGrid[baseRow+1][baseCol] = matrix[1][0]; fullGrid[baseRow+1][baseCol+1] = matrix[1][1];
-            }
-            for (let i = 0; i < 6; i++) {
-                let rowSeen = new Set(), colSeen = new Set();
-                for (let j = 0; j < 6; j++) {
-                    let rVal = fullGrid[i][j];
-                    if (rVal !== 0) { if (rowSeen.has(rVal)) return false; rowSeen.add(rVal); }
-                    let cVal = fullGrid[j][i];
-                    if (cVal !== 0) { if (colSeen.has(cVal)) return false; colSeen.add(cVal); }
-                }
-            }
-            return true;
-        }
-
-        // 遞迴尋找所有解 (上限 20 個)
-        function solveAll(board, usedIDs) {
-            // 如果已經找到夠多解法，停止搜尋 (避免瀏覽器卡死)
-            if (allSolutions.length >= 20) return true;
-
-            let slot = -1;
-            for(let i=0; i<9; i++) {
-                const type = currentLayoutConfig[i].type;
-                if(board[i] === null && (type === 'SOLVE' || type === 'FIXED')) {
-                    slot = i; break;
-                }
-            }
-
-            // 找到一個解！
-            if (slot === -1) {
-                // 深拷貝目前的盤面並存入結果陣列
-                allSolutions.push(JSON.parse(JSON.stringify(board)));
-                return false; // 返回 false 讓迴圈繼續尋找下一個解
-            }
-
-            const config = currentLayoutConfig[slot];
-            let candidates = [];
-
-            if (config.type === 'FIXED') {
-                candidates.push({ id: config.id, face: config.face, isFixed: true });
-            } else {
-                for (let id = 1; id <= 9; id++) {
-                    if (!usedIDs.has(id) && !reservedIDs.has(id)) {
-                        candidates.push({ id: id, face: 'B', isFixed: false });
-                        candidates.push({ id: id, face: 'W', isFixed: false });
-                    }
-                }
-            }
-
-            for (let cand of candidates) {
-                for (let rot = 0; rot < 4; rot++) {
-                    board[slot] = { id: cand.id, face: cand.face, rot: rot, isFixed: cand.isFixed };
-                    
-                    if (isValid(board)) {
-                        usedIDs.add(cand.id);
-                        if (solveAll(board, usedIDs)) return true; // 如果滿了就停止
-                        usedIDs.delete(cand.id);
-                    }
-                    board[slot] = null;
-                }
-            }
-            return false;
-        }
-
-        // --- 5. 執行與渲染 ---
-        
-        function startSolving() {
-            const targets = getUserTargets();
-            // 產生一個特徵字串來判斷參數是否改變
-            const currentParamsHash = JSON.stringify(targets) + currentShapeIndex;
-
-            // 判斷是「新計算」還是「切換下一個解」
-            if (currentParamsHash !== lastParamsHash || allSolutions.length === 0) {
-                // --- 新計算 ---
-                document.getElementById('status-text').innerHTML = "🔮 正在詠唱咒語...";
-                if(validateTargets(targets)) return;
-
-                let board = Array(9).fill(null);
-                let used = new Set();
-                reservedIDs.clear();
-                allSolutions = []; // 清空舊解
-
-                // 鎖定保留 ID
-                for(let i=0; i<9; i++) {
-                    const config = currentLayoutConfig[i];
-                    if(config.type === 'FIXED') {
-                        reservedIDs.add(config.id);
-                    }
-                }
-
-                setTimeout(() => {
-                    solveAll(board, used); // 計算所有解
-
-                    if (allSolutions.length > 0) {
-                        currentSolIndex = 0;
-                        lastParamsHash = currentParamsHash; // 紀錄目前參數
-                        updateStatusAndRender();
-                    } else {
-                        document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 封印失敗 (魔力衝突)</span>";
-                        document.getElementById('btn-solve').innerText = "✨ 開始封印 ✨";
-                    }
-                }, 50);
-
-            } else {
-                // --- 切換下一個解 ---
-                currentSolIndex++;
-                if (currentSolIndex >= allSolutions.length) {
-                    currentSolIndex = 0; // 循環回到第一個
-                }
-                updateStatusAndRender();
-            }
-        }
-
-        function updateStatusAndRender() {
-            const total = allSolutions.length;
-            const current = currentSolIndex + 1;
-            const btn = document.getElementById('btn-solve');
-            const status = document.getElementById('status-text');
-
-            renderGrid(allSolutions[currentSolIndex], false);
-
-            if (total === 1) {
-                status.innerHTML = "<span class='success-msg'>✅ 封印成功 (唯一解)</span>";
-                btn.innerText = "✨ 唯一解 ✨";
-            } else {
-                let countText = total >= 20 ? "20+" : total;
-                status.innerHTML = `<span class='multi-msg'>✅ 封印成功 (第 ${current} / ${countText} 種解法)</span>`;
-                btn.innerText = "➡️ 換一種解法";
-            }
-        }
-
-        function renderEmptyGrid() {
-            const container = document.getElementById('grid-container');
-            container.innerHTML = '';
-            // 這裡可以放預設空盤，或直接呼叫 renderGrid(null, true)
-        }
-
-        function renderGrid(boardData, isPreview) {
-            const container = document.getElementById('grid-container');
-            container.innerHTML = '';
-
-            for(let i=0; i<9; i++) {
-                const config = currentLayoutConfig[i];
-                let block = boardData ? boardData[i] : null;
-                const div = document.createElement('div');
-                div.className = 'block';
-
-                if (isPreview && config.type === 'FIXED') {
-                    block = { id: config.id, face: config.face, rot: 0, isFixed: true };
-                }
-
-                if (config.type === 'EMPTY') {
-                    div.classList.add('empty-slot');
-                } 
-                else if (block) {
-                    div.style.borderColor = block.isFixed ? '#e74c3c' : '#555';
-                    const imagePath = `images/block_${block.id}_${block.face}.png`;
-                    const rot = block.rot * 90;
-                    div.innerHTML = `
-                        <img src="${imagePath}" class="block-image" style="transform: rotate(${rot}deg);"
-                             onerror="this.style.display='none'; this.parentNode.innerText='${block.face}${block.id}';">
-                        <div class="block-info">${block.face}${block.id}</div>
-                    `;
-                }
-                else if (config.type === 'SOLVE') {
-                    div.innerHTML = '<span style="color:#ccc; font-size:2rem;">?</span>';
-                }
-                container.appendChild(div);
-            }
-        }
-
-        init();
-    </script>
-</body>
-</html>
