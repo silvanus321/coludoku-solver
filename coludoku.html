@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>色獨封印法典 (完整版)</title>
+    <title>色獨封印法典 (全圖形版)</title>
     <style>
         /* --- 基礎設定 --- */
         body {
@@ -33,50 +33,20 @@
         .step-title {
             font-size: 1.1rem;
             color: #2c3e50;
-            margin: 15px 0 10px 0;
+            margin: 20px 0 10px 0;
             font-weight: bold;
             text-align: left;
             border-bottom: 2px solid #eee;
             padding-bottom: 5px;
         }
 
-        /* --- 目標選擇器 --- */
-        .target-selection-area {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-
-        .target-picker {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            width: 30%;
-            min-width: 90px;
-            box-sizing: border-box;
-        }
-
-        .picker-label { font-size: 0.85rem; color: #7f8c8d; margin-bottom: 5px; font-weight: bold; }
-
-        select {
-            padding: 5px;
-            border-radius: 4px;
-            border: 1px solid #bdc3c7;
-            width: 100%;
-            margin-bottom: 5px;
-            font-size: 1rem;
-        }
-
         /* --- 等級選擇器 --- */
         .level-selector {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             background: #eee;
-            padding: 5px;
+            padding: 4px;
             border-radius: 8px;
         }
 
@@ -84,27 +54,26 @@
             flex: 1;
             border: none;
             background: transparent;
-            padding: 8px 0;
+            padding: 6px 0;
             cursor: pointer;
             border-radius: 6px;
             font-weight: bold;
             color: #666;
             transition: all 0.2s;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .level-btn:hover { background-color: #ddd; color: #333; }
         .level-btn.active { background-color: #3498db; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
-
-        /* --- 圖形按鈕 --- */
-        .shape-selector {
+        /* --- 圖片按鈕網格 --- */
+        .grid-selector {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
         }
 
-        .shape-btn {
+        .img-btn {
             background-color: white;
             border: 2px solid #eee;
             border-radius: 10px;
@@ -116,13 +85,16 @@
             align-items: center;
             justify-content: center;
             padding: 5px;
+            position: relative;
         }
 
-        .shape-btn:hover { border-color: #3498db; transform: translateY(-3px); }
-        .shape-btn.active { border-color: #f1c40f; background-color: #fffcf0; box-shadow: 0 0 8px rgba(241, 196, 15, 0.4); transform: scale(1.05); }
-        .shape-btn img { width: 80%; height: 80%; object-fit: contain; }
-        .shape-label { margin-top: 5px; font-size: 0.8rem; color: #555; font-weight: bold; }
-
+        .img-btn:hover { border-color: #3498db; transform: translateY(-3px); }
+        .img-btn.active { border-color: #f1c40f; background-color: #fffcf0; box-shadow: 0 0 8px rgba(241, 196, 15, 0.4); transform: scale(1.05); }
+        .img-btn img { width: 85%; height: 85%; object-fit: contain; }
+        
+        .btn-label { margin-top: 5px; font-size: 0.75rem; color: #555; font-weight: bold; }
+        #tile-buttons .img-btn.active { border-color: #e67e22; background-color: #fdf2e9; } 
+        
         /* --- 執行按鈕與訊息 --- */
         .solve-btn {
             background-color: #2ecc71;
@@ -133,7 +105,7 @@
             border-radius: 50px;
             cursor: pointer;
             transition: transform 0.2s;
-            margin-top: 15px;
+            margin-top: 25px;
             box-shadow: 0 4px 6px rgba(46, 204, 113, 0.3);
             width: 100%;
         }
@@ -188,37 +160,22 @@
     
     <div class="controls">
         
-        <div class="step-title">步驟 1：選擇目標魔石 💎</div>
-        <div class="target-selection-area">
-            <div class="target-picker">
-                <div class="picker-label">魔石 I</div>
-                <select id="t1-id" onchange="updatePreview()"></select>
-                <select id="t1-face" onchange="updatePreview()">
-                    <option value="W" selected>W (白)</option>
-                    <option value="B">B (黑)</option>
-                </select>
-            </div>
-            <div class="target-picker">
-                <div class="picker-label">魔石 II</div>
-                <select id="t2-id" onchange="updatePreview()"></select>
-                <select id="t2-face" onchange="updatePreview()">
-                    <option value="W" selected>W (白)</option>
-                    <option value="B">B (黑)</option>
-                </select>
-            </div>
-            <div class="target-picker">
-                <div class="picker-label">魔石 III</div>
-                <select id="t3-id" onchange="updatePreview()"></select>
-                <select id="t3-face" onchange="updatePreview()">
-                    <option value="W">W (白)</option>
-                    <option value="B" selected>B (黑)</option>
-                </select>
-            </div>
+        <div class="step-title">步驟 1：選擇魔石組合 (Tiles) 💎</div>
+        
+        <div class="level-selector" id="tile-level-buttons">
+            <button class="level-btn" onclick="filterTilesByLevel(1)">Level I</button>
+            <button class="level-btn" onclick="filterTilesByLevel(2)">II</button>
+            <button class="level-btn" onclick="filterTilesByLevel(3)">III</button>
+            <button class="level-btn" onclick="filterTilesByLevel(4)">IV</button>
+            <button class="level-btn" onclick="filterTilesByLevel(5)">V</button>
+            <button class="level-btn" onclick="filterTilesByLevel(6)">VI</button>
         </div>
 
-        <div class="step-title">步驟 2：選擇法陣等級 🔯</div>
+        <div class="grid-selector" id="tile-buttons"></div>
+
+        <div class="step-title">步驟 2：選擇封印法陣 (Shapes) 🔯</div>
         
-        <div class="level-selector" id="level-buttons">
+        <div class="level-selector" id="shape-level-buttons">
             <button class="level-btn" onclick="filterShapesByLevel(1)">Level I</button>
             <button class="level-btn" onclick="filterShapesByLevel(2)">II</button>
             <button class="level-btn" onclick="filterShapesByLevel(3)">III</button>
@@ -227,8 +184,7 @@
             <button class="level-btn" onclick="filterShapesByLevel(6)">VI</button>
         </div>
 
-        <div class="shape-selector" id="shape-buttons">
-            </div>
+        <div class="grid-selector" id="shape-buttons"></div>
 
         <div class="step-title">步驟 3：詠唱咒語 🪄</div>
         <div id="status-text" class="status-msg">請完成設定...</div>
@@ -238,7 +194,7 @@
     <div id="grid-container" class="main-grid"></div>
 
     <script>
-        // --- 1. 資料庫 ---
+        // --- 1. 資料庫：基本方塊定義 ---
         const BLOCKS = {
             1: { B: [[1,2],[3,4]], W: [[4,3],[6,5]] },
             2: { B: [[3,4],[5,6]], W: [[6,5],[2,1]] },
@@ -251,91 +207,154 @@
             9: { B: [[2,3],[4,5]], W: [[5,4],[1,6]] }
         };
 
-        const SHAPES = [
-            // Level I (001-006)
-            { id: 1, name: "No.001", level: 1, active: [1,3,5,7,9], targets: [3,5,7] },
-            { id: 2, name: "No.002", level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
-            { id: 3, name: "No.003", level: 1, active: [1,3,4,6,8], targets: [3,4,8] },
-            { id: 4, name: "No.004", level: 1, active: [1,3,5,7,9], targets: [1,5,9] },
-            { id: 5, name: "No.005", level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
-            { id: 6, name: "No.006", level: 1, active: [1,3,4,6,8], targets: [3,4,8] },
-            // Level II (007-012)
-            { id: 7, name: "No.007", level: 2, active: [1,2,5,8,9], targets: [1,5,9] },
-            { id: 8, name: "No.008", level: 2, active: [2,4,5,8,9], targets: [2,4,9] },
-            { id: 9, name: "No.009", level: 2, active: [2,3,4,6,9], targets: [2,4,9] },
-            { id: 10, name: "No.010", level: 2, active: [1,2,5,8,9], targets: [1,5,9] },
-            { id: 11, name: "No.011", level: 2, active: [2,4,5,8,9], targets: [2,4,9] },
-            { id: 12, name: "No.012", level: 2, active: [2,3,4,6,9], targets: [2,4,9] },
-            // Level III (013-018)
-            { id: 13, name: "No.013", level: 3, active: [2,3,4,5,7,8], targets: [3,5,7] },
-            { id: 14, name: "No.014", level: 3, active: [1,2,4,6,7,9], targets: [2,6,7] },
-            { id: 15, name: "No.015", level: 3, active: [3,4,5,7,8,9], targets: [3,4,8] },
-            { id: 16, name: "No.016", level: 3, active: [2,3,4,5,7,8], targets: [3,5,7] },
-            { id: 17, name: "No.017", level: 3, active: [2,4,6,7,8,9], targets: [2,6,7] },
-            { id: 18, name: "No.018", level: 3, active: [3,4,5,7,8,9], targets: [3,4,8] },
-            // Level IV (019-024)
-            { id: 19, name: "No.019", level: 4, active: [1,3,5,7,8,9], targets: [3,5,7] },
-            { id: 20, name: "No.020", level: 4, active: [2,4,5,6,7,9], targets: [2,4,9] },
-            { id: 21, name: "No.021", level: 4, active: [2,4,5,6,7,9], targets: [2,4,9] },
-            { id: 22, name: "No.022", level: 4, active: [1,3,5,7,8,9], targets: [3,5,7] },
-            { id: 23, name: "No.023", level: 4, active: [2,4,5,6,7,9], targets: [2,6,7] },
-            { id: 24, name: "No.024", level: 4, active: [2,4,5,6,7,9], targets: [2,6,7] },
-            // Level V (025-030)
-            { id: 25, name: "No.025", level: 5, active: [1,3,5,6,7,8,9], targets: [3,5,7] },
-            { id: 26, name: "No.026", level: 5, active: [2,3,4,5,6,7,8], targets: [2,6,7] },
-            { id: 27, name: "No.027", level: 5, active: [2,3,4,6,7,8,9], targets: [3,4,8] },
-            { id: 28, name: "No.028", level: 5, active: [1,3,5,6,7,8,9], targets: [1,5,9] },
-            { id: 29, name: "No.029", level: 5, active: [2,3,4,5,6,7,8], targets: [3,4,8] },
-            { id: 30, name: "No.030", level: 5, active: [2,3,4,6,7,8,9], targets: [2,6,7] },
-            // Level VI (031-036)
-            { id: 31, name: "No.031", level: 6, active: [1,3,4,5,6,7,8,9], targets: [3,5,7] },
-            { id: 32, name: "No.032", level: 6, active: [1,2,3,4,6,7,8,9], targets: [2,6,7] },
-            { id: 33, name: "No.033", level: 6, active: [2,3,4,5,6,7,8,9], targets: [3,4,8] },
-            { id: 34, name: "No.034", level: 6, active: [1,3,4,5,6,7,8,9], targets: [3,4,8] },
-            { id: 35, name: "No.035", level: 6, active: [1,2,3,4,6,7,8,9], targets: [2,4,9] },
-            { id: 36, name: "No.036", level: 6, active: [2,3,4,5,6,7,8,9], targets: [3,5,7] }
+        // --- 資料庫：魔石組合 (Target Tiles) ---
+        const TARGET_TILES = [
+            // Level I
+            { id: 1,  level: 1, blocks: [{id:1, f:'B'}, {id:5, f:'B'}, {id:8, f:'W'}] },
+            { id: 2,  level: 1, blocks: [{id:2, f:'B'}, {id:9, f:'B'}, {id:6, f:'W'}] },
+            { id: 3,  level: 1, blocks: [{id:6, f:'B'}, {id:1, f:'W'}, {id:7, f:'B'}] },
+            { id: 4,  level: 1, blocks: [{id:9, f:'W'}, {id:3, f:'B'}, {id:4, f:'W'}] },
+            { id: 5,  level: 1, blocks: [{id:2, f:'W'}, {id:7, f:'W'}, {id:4, f:'B'}] },
+            { id: 6,  level: 1, blocks: [{id:5, f:'W'}, {id:3, f:'W'}, {id:8, f:'B'}] },
+            // Level II
+            { id: 7,  level: 2, blocks: [{id:5, f:'B'}, {id:3, f:'B'}, {id:9, f:'W'}] },
+            { id: 8,  level: 2, blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:8, f:'B'}] },
+            { id: 9,  level: 2, blocks: [{id:4, f:'B'}, {id:8, f:'B'}, {id:2, f:'W'}] },
+            { id: 10, level: 2, blocks: [{id:3, f:'B'}, {id:6, f:'W'}, {id:7, f:'W'}] },
+            { id: 11, level: 2, blocks: [{id:9, f:'W'}, {id:6, f:'B'}, {id:1, f:'W'}] },
+            { id: 12, level: 2, blocks: [{id:4, f:'W'}, {id:2, f:'W'}, {id:7, f:'B'}] },
+            // Level III
+            { id: 13, level: 3, blocks: [{id:3, f:'B'}, {id:4, f:'B'}, {id:7, f:'W'}] },
+            { id: 14, level: 3, blocks: [{id:9, f:'B'}, {id:4, f:'W'}, {id:1, f:'B'}] },
+            { id: 15, level: 3, blocks: [{id:7, f:'B'}, {id:5, f:'B'}, {id:2, f:'W'}] },
+            { id: 16, level: 3, blocks: [{id:6, f:'W'}, {id:8, f:'W'}, {id:2, f:'B'}] },
+            { id: 17, level: 3, blocks: [{id:5, f:'B'}, {id:8, f:'W'}, {id:3, f:'W'}] },
+            { id: 18, level: 3, blocks: [{id:1, f:'W'}, {id:9, f:'B'}, {id:6, f:'W'}] },
+            // Level IV
+            { id: 19, level: 4, blocks: [{id:2, f:'B'}, {id:6, f:'B'}, {id:9, f:'W'}] },
+            { id: 20, level: 4, blocks: [{id:7, f:'B'}, {id:4, f:'W'}, {id:3, f:'B'}] },
+            { id: 21, level: 4, blocks: [{id:9, f:'B'}, {id:4, f:'B'}, {id:1, f:'W'}] },
+            { id: 22, level: 4, blocks: [{id:1, f:'B'}, {id:8, f:'W'}, {id:4, f:'W'}] },
+            { id: 23, level: 4, blocks: [{id:9, f:'W'}, {id:5, f:'B'}, {id:2, f:'W'}] },
+            { id: 24, level: 4, blocks: [{id:8, f:'B'}, {id:6, f:'W'}, {id:2, f:'W'}] },
+            // Level V
+            { id: 25, level: 5, blocks: [{id:1, f:'B'}, {id:6, f:'B'}, {id:7, f:'W'}] },
+            { id: 26, level: 5, blocks: [{id:3, f:'B'}, {id:8, f:'B'}, {id:6, f:'W'}] },
+            { id: 27, level: 5, blocks: [{id:5, f:'B'}, {id:9, f:'B'}, {id:3, f:'W'}] },
+            { id: 28, level: 5, blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:7, f:'W'}] },
+            { id: 29, level: 5, blocks: [{id:8, f:'W'}, {id:4, f:'B'}, {id:1, f:'W'}] },
+            { id: 30, level: 5, blocks: [{id:3, f:'W'}, {id:4, f:'W'}, {id:9, f:'B'}] },
+            // Level VI
+            { id: 31, level: 6, blocks: [{id:4, f:'B'}, {id:2, f:'B'}, {id:8, f:'W'}] },
+            { id: 32, level: 6, blocks: [{id:2, f:'B'}, {id:5, f:'W'}, {id:7, f:'B'}] },
+            { id: 33, level: 6, blocks: [{id:8, f:'B'}, {id:6, f:'B'}, {id:3, f:'W'}] },
+            { id: 34, level: 6, blocks: [{id:5, f:'W'}, {id:2, f:'B'}, {id:9, f:'W'}] },
+            { id: 35, level: 6, blocks: [{id:3, f:'W'}, {id:7, f:'W'}, {id:6, f:'B'}] },
+            { id: 36, level: 6, blocks: [{id:7, f:'B'}, {id:5, f:'W'}, {id:1, f:'W'}] }
         ];
 
-        let currentLayoutConfig = {}; 
+        // --- 資料庫：封印法陣 (Shapes) 更新版 ---
+        const SHAPES = [
+            // Level I
+            { id: 1, name: "No.001", level: 1, active: [2,3,4,7,9], targets: [2,4,9] },
+            { id: 2, name: "No.002", level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
+            { id: 3, name: "No.003", level: 1, active: [1,3,5,8,9], targets: [1,5,9] },
+            { id: 4, name: "No.004", level: 1, active: [1,3,4,8,9], targets: [3,4,8] },
+            { id: 5, name: "No.005", level: 1, active: [1,2,4,6,8], targets: [1,6,8] },
+            { id: 6, name: "No.006", level: 1, active: [1,3,5,7,8], targets: [3,5,7] },
+            // Level II
+            { id: 7, name: "No.007", level: 2, active: [2,4,5,8,9], targets: [2,4,9] },
+            { id: 8, name: "No.008", level: 2, active: [2,6,7,8,9], targets: [2,6,7] },
+            { id: 9, name: "No.009", level: 2, active: [1,2,5,8,9], targets: [1,5,9] },
+            { id: 10, name: "No.010", level: 2, active: [2,3,4,5,8], targets: [3,4,8] },
+            { id: 11, name: "No.011", level: 2, active: [1,2,3,6,8], targets: [1,6,8] },
+            { id: 12, name: "No.012", level: 2, active: [2,3,5,7,8], targets: [3,5,7] },
+            // Level III
+            { id: 13, name: "No.013", level: 3, active: [2,4,6,7,8,9], targets: [2,4,9] },
+            { id: 14, name: "No.014", level: 3, active: [2,4,5,6,7,9], targets: [2,6,7] },
+            { id: 15, name: "No.015", level: 3, active: [1,3,5,7,8,9], targets: [1,5,9] },
+            { id: 16, name: "No.016", level: 3, active: [2,3,4,6,8,9], targets: [3,4,8] },
+            { id: 17, name: "No.017", level: 3, active: [1,2,5,6,7,8], targets: [1,6,8] },
+            { id: 18, name: "No.018", level: 3, active: [1,3,5,6,7,9], targets: [3,5,7] },
+            // Level IV
+            { id: 19, name: "No.019", level: 4, active: [2,4,5,6,8,9], targets: [2,4,9] },
+            { id: 20, name: "No.020", level: 4, active: [2,5,6,7,8,9], targets: [2,6,7] },
+            { id: 21, name: "No.021", level: 4, active: [1,2,3,5,6,9], targets: [1,5,9] },
+            { id: 22, name: "No.022", level: 4, active: [2,3,4,5,6,8], targets: [3,4,8] },
+            { id: 23, name: "No.023", level: 4, active: [1,2,3,5,6,8], targets: [1,6,8] },
+            { id: 24, name: "No.024", level: 4, active: [1,2,3,4,5,7], targets: [3,5,7] },
+            // Level V
+            { id: 25, name: "No.025", level: 5, active: [1,2,4,5,6,8,9], targets: [2,4,9] },
+            { id: 26, name: "No.026", level: 5, active: [1,2,4,6,7,8,9], targets: [2,6,7] },
+            { id: 27, name: "No.027", level: 5, active: [1,3,5,6,7,8,9], targets: [1,5,9] },
+            { id: 28, name: "No.028", level: 5, active: [2,3,4,5,6,7,8], targets: [3,4,8] },
+            { id: 29, name: "No.029", level: 5, active: [1,2,3,4,6,8,9], targets: [1,6,8] },
+            { id: 30, name: "No.030", level: 5, active: [1,3,4,5,7,8,9], targets: [3,5,7] },
+            // Level VI
+            { id: 31, name: "No.031", level: 6, active: [1,2,3,4,6,7,9], targets: [2,4,9] },
+            { id: 32, name: "No.032", level: 6, active: [2,4,5,6,7,8,9], targets: [2,6,7] },
+            { id: 33, name: "No.033", level: 6, active: [1,3,4,5,6,7,9], targets: [1,5,9] },
+            { id: 34, name: "No.034", level: 6, active: [1,2,3,4,7,8,9], targets: [3,4,8] },
+            { id: 35, name: "No.035", level: 6, active: [1,2,4,5,6,7,8], targets: [1,6,8] },
+            { id: 36, name: "No.036", level: 6, active: [1,2,3,5,7,8,9], targets: [3,5,7] }
+        ];
+
+        // 全域變數
+        let currentTileID = 1;  
         let currentShapeID = 1; 
+        
+        let currentLayoutConfig = {}; 
         let reservedIDs = new Set();
         let allSolutions = [];      
         let currentSolIndex = 0;    
         let lastParamsHash = "";    
 
-        // --- 2. 初始化 ---
+        // --- 初始化 ---
         function init() {
-            // 填入下拉選單
-            ['t1-id', 't2-id', 't3-id'].forEach((id, idx) => {
-                const sel = document.getElementById(id);
-                const optNone = document.createElement('option');
-                optNone.value = 0;
-                optNone.text = "🚫 無";
-                sel.add(optNone);
-
-                for(let i=1; i<=9; i++) {
-                    const opt = document.createElement('option');
-                    opt.value = i;
-                    opt.text = `No. ${i}`;
-                    sel.add(opt);
-                }
-                if(idx===0) sel.value = 4;
-                if(idx===1) sel.value = 9;
-                if(idx===2) sel.value = 3;
-            });
-
-            // 初始化時先載入 Level 1，並且選中第一個形狀 (ID=1)
+            // 預設載入 Level 1
+            filterTilesByLevel(1);
             filterShapesByLevel(1);
-            selectShape(1); 
+            
+            // 預設選中
+            selectTile(1);
+            selectShape(1);
         }
 
-        // --- Level Filter Function ---
-        function filterShapesByLevel(level) {
-            const levelBtns = document.querySelectorAll('.level-btn');
-            levelBtns.forEach((btn, idx) => {
-                if (idx + 1 === level) btn.classList.add('active');
-                else btn.classList.remove('active');
+        // --- 核心邏輯：過濾器 ---
+        
+        function filterTilesByLevel(level) {
+            updateLevelBtns('tile-level-buttons', level);
+            
+            const btnContainer = document.getElementById('tile-buttons');
+            btnContainer.innerHTML = '';
+
+            const levelTiles = TARGET_TILES.filter(t => t.level === level);
+            
+            levelTiles.forEach((tile) => {
+                const btn = document.createElement('div');
+                btn.className = 'img-btn';
+                if(tile.id === currentTileID) btn.classList.add('active');
+
+                btn.onclick = () => selectTile(tile.id);
+                
+                const paddedID = String(tile.id).padStart(3, '0');
+                const imgPath = `images/tile_${paddedID}.png`;
+                const label = `No.${paddedID}`;
+                
+                btn.innerHTML = `
+                    <img src="${imgPath}" alt="${label}" onerror="this.style.display='none';this.parentElement.innerText='${label}'">
+                    <div class="btn-label">${label}</div>
+                `;
+                btnContainer.appendChild(btn);
             });
+            
+            if (levelTiles.length > 0 && !levelTiles.some(t => t.id === currentTileID)) {
+                selectTile(levelTiles[0].id);
+            }
+        }
+
+        function filterShapesByLevel(level) {
+            updateLevelBtns('shape-level-buttons', level);
 
             const btnContainer = document.getElementById('shape-buttons');
             btnContainer.innerHTML = ''; 
@@ -344,7 +363,7 @@
             
             levelShapes.forEach((shape) => {
                 const btn = document.createElement('div');
-                btn.className = 'shape-btn';
+                btn.className = 'img-btn';
                 if(shape.id === currentShapeID) btn.classList.add('active');
 
                 btn.onclick = () => selectShape(shape.id);
@@ -354,96 +373,88 @@
                 
                 btn.innerHTML = `
                     <img src="${imgPath}" alt="${shape.name}" onerror="this.style.display='none';this.parentElement.innerText='${shape.name}'">
-                    <div class="shape-label">${shape.name}</div>
+                    <div class="btn-label">${shape.name}</div>
                 `;
                 btnContainer.appendChild(btn);
             });
             
-            // 自動選取該等級的第一個圖形
-            if (levelShapes.length > 0) {
-                 const isCurrentInLevel = levelShapes.some(s => s.id === currentShapeID);
-                 if (!isCurrentInLevel) {
-                     selectShape(levelShapes[0].id);
-                 }
+            if (levelShapes.length > 0 && !levelShapes.some(s => s.id === currentShapeID)) {
+                selectShape(levelShapes[0].id);
             }
         }
 
-
-        // --- 3. UI 互動 ---
-        function getUserTargets() {
-            return [
-                { id: parseInt(document.getElementById('t1-id').value), face: document.getElementById('t1-face').value },
-                { id: parseInt(document.getElementById('t2-id').value), face: document.getElementById('t2-face').value },
-                { id: parseInt(document.getElementById('t3-id').value), face: document.getElementById('t3-face').value }
-            ];
+        function updateLevelBtns(containerId, activeLevel) {
+            const btns = document.getElementById(containerId).querySelectorAll('.level-btn');
+            btns.forEach((btn, idx) => {
+                if (idx + 1 === activeLevel) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
         }
 
-        function validateTargets(targets) {
-            const ids = targets.map(t => t.id).filter(id => id !== 0);
-            const uniqueIds = new Set(ids);
-            if (uniqueIds.size !== ids.length) return "魔石編號不能重複！";
-            return null;
+        function selectTile(id) {
+            currentTileID = id;
+            updateActiveState('tile-buttons', id);
+            resetSolverState();
+            updatePreview();
         }
 
         function selectShape(id) {
             currentShapeID = id;
-            
-            const buttons = document.querySelectorAll('.shape-btn');
-            buttons.forEach(b => b.classList.remove('active'));
-            
-            buttons.forEach(btn => {
-                if(btn.innerText.includes(SHAPES.find(s=>s.id===id).name)) {
-                    btn.classList.add('active');
-                }
-            });
-
+            updateActiveState('shape-buttons', id);
+            resetSolverState();
             updatePreview();
         }
 
-        function updatePreview() {
+        function updateActiveState(containerId, activeId) {
+            const container = document.getElementById(containerId);
+            container.querySelectorAll('.img-btn').forEach(b => b.classList.remove('active'));
+            
+            const paddedId = String(activeId).padStart(3, '0');
+            const targetText = `No.${paddedId}`;
+            const targetName = SHAPES.find(s=>s.id===activeId)?.name || `No.${paddedId}`;
+
+            container.querySelectorAll('.img-btn').forEach(btn => {
+                if(btn.innerText.includes(targetText) || btn.innerText.includes(targetName)) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+        
+        function resetSolverState() {
             allSolutions = [];
             currentSolIndex = 0;
             renderEmptyGrid();
+            document.getElementById('btn-solve').innerText = "✨ 開始封印 ✨";
+            document.getElementById('status-text').innerHTML = "準備就緒";
+        }
 
-            const targets = getUserTargets();
-            const error = validateTargets(targets);
-            const statusEl = document.getElementById('status-text');
-            const btnSolve = document.getElementById('btn-solve');
-
-            btnSolve.innerText = "✨ 開始封印 ✨";
-
-            if (error) {
-                statusEl.innerHTML = `<span class="error-msg">${error}</span>`;
-                btnSolve.disabled = true;
-                return; 
-            } else {
-                statusEl.innerHTML = "法陣已就緒";
-                statusEl.className = "status-msg";
-                btnSolve.disabled = false;
-            }
-
+        function updatePreview() {
             const shape = SHAPES.find(s => s.id === currentShapeID);
+            const tile = TARGET_TILES.find(t => t.id === currentTileID);
             
+            if(!shape || !tile) return;
+
             currentLayoutConfig = {};
             for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
             shape.active.forEach(pos => { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; });
             
             shape.targets.forEach((pos, idx) => {
-                const userBlock = targets[idx];
-                if (userBlock.id === 0) {
-                    currentLayoutConfig[pos-1] = { type: 'SOLVE' };
-                } else {
+                if (idx < tile.blocks.length) {
+                    const blockDef = tile.blocks[idx];
                     currentLayoutConfig[pos-1] = { 
                         type: 'FIXED', 
-                        id: userBlock.id, 
-                        face: userBlock.face 
+                        id: blockDef.id, 
+                        face: blockDef.f 
                     };
+                } else {
+                    currentLayoutConfig[pos-1] = { type: 'SOLVE' };
                 }
             });
+            
             renderGrid(null, true);
         }
 
-        // --- 4. 解題核心 ---
+        // --- 解題核心 ---
         function getRotatedMatrix(matrix, times) {
             let m = JSON.parse(JSON.stringify(matrix));
             for (let t = 0; t < times; t++) {
@@ -479,13 +490,11 @@
         }
 
         function solveAll(board, usedIDs) {
-            // --- 關鍵修改：將上限從 20 改為 72 ---
             if (allSolutions.length >= 72) return true;
 
             let slot = -1;
             for(let i=0; i<9; i++) {
                 if (!currentLayoutConfig[i]) continue;
-                
                 const type = currentLayoutConfig[i].type;
                 if(board[i] === null && (type === 'SOLVE' || type === 'FIXED')) {
                     slot = i; break;
@@ -526,23 +535,20 @@
             return false;
         }
 
-        // --- 5. 執行與渲染 ---
-        
+        // --- 執行與渲染 ---
         function startSolving() {
-            const targets = getUserTargets();
-            const currentParamsHash = JSON.stringify(targets) + currentShapeID;
+            const currentParamsHash = `${currentTileID}-${currentShapeID}`;
 
             if (currentParamsHash !== lastParamsHash || allSolutions.length === 0) {
                 document.getElementById('status-text').innerHTML = "🔮 正在詠唱咒語...";
-                if(validateTargets(targets)) return;
-
+                
                 let board = Array(9).fill(null);
                 let used = new Set();
                 reservedIDs.clear();
                 allSolutions = []; 
 
                 if (Object.keys(currentLayoutConfig).length === 0) {
-                     alert("請先選擇一個圖形！");
+                     alert("請先選擇圖形與魔石！");
                      return;
                 }
 
@@ -587,7 +593,6 @@
                 status.innerHTML = "<span class='success-msg'>✅ 封印成功 (唯一解)</span>";
                 btn.innerText = "✨ 唯一解 ✨";
             } else {
-                // --- 關鍵修改：顯示上限文字 ---
                 let countText = total >= 72 ? "72+" : total;
                 status.innerHTML = `<span class='multi-msg'>✅ 封印成功 (第 ${current} / ${countText} 種解法)</span>`;
                 btn.innerText = "➡️ 換一種解法";
