@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>色獨封印法典 (完美版)</title>
+    <title>色獨封印法典 (光暈特效版)</title>
     <style>
         /* --- 1. 基礎設定 --- */
         body {
@@ -109,7 +109,7 @@
             aspect-ratio: 1 / 1;
             box-sizing: border-box;
             margin: 0 auto;
-            position: relative;
+            position: relative; /* 讓光暈層可以定位 */
         }
 
         .main-grid.win-glow {
@@ -147,6 +147,28 @@
             position: absolute; top: 20%; left: 20%; width: 60%; height: 60%; 
             z-index: 12; border-radius: 50%; 
         }
+
+        /* 光暈特效層 */
+        .glow-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; /* 讓點擊穿透 */
+            z-index: 20;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .glow-bar {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            transition: opacity 0.3s;
+        }
+        
+        /* 橫向光暈 */
+        .glow-row { left: 2%; width: 96%; height: 16.66%; }
+        /* 縱向光暈 */
+        .glow-col { top: 2%; height: 96%; width: 16.66%; }
 
         /* --- 5. 狀態與按鈕 --- */
         .status-msg { margin: 15px 0; font-weight: bold; font-size: 1.1rem; min-height: 24px; color: #333; }
@@ -212,7 +234,8 @@
         <div class="step-title">步驟 3：手動調整魔石 🎴</div>
         <div style="font-size:0.8rem; color:#666; margin-bottom:5px;">點擊邊緣旋轉 | 點擊中心或滑動翻面</div>
         
-        <div id="grid-container" class="main-grid"></div>
+        <div id="grid-container" class="main-grid">
+            </div>
         <div id="status-text" class="status-msg">請選擇題目...</div>
 
         <button id="btn-solve" class="solve-btn" onclick="forceSolve()">🔓 啟動封印解答 ✨</button>
@@ -307,14 +330,16 @@
             { id: 26, name: "No.026", level: 5, active: [1,2,4,6,7,8,9], targets: [2,6,7] },
             { id: 27, name: "No.027", level: 5, active: [1,3,5,6,7,8,9], targets: [1,5,9] },
             { id: 28, name: "No.028", level: 5, active: [2,3,4,5,6,7,8], targets: [3,4,8] },
-            { id: 29, name: "No.029", level: 5, active: [2,3,4,5,6,7,8], targets: [1,6,8] },
-            { id: 30, name: "No.030", level: 5, active: [1,2,3,4,6,8,9], targets: [3,5,7] },
+            // 修正的 ID 29, 30
+            { id: 29, name: "No.029", level: 5, active: [1,2,3,4,6,8,9], targets: [1,6,8] },
+            { id: 30, name: "No.030", level: 5, active: [1,3,4,5,7,8,9], targets: [3,5,7] },
             { id: 31, name: "No.031", level: 6, active: [1,2,3,4,6,7,9], targets: [2,4,9] },
             { id: 32, name: "No.032", level: 6, active: [2,4,5,6,7,8,9], targets: [2,6,7] },
+            // 修正的 ID 33~36
             { id: 33, name: "No.033", level: 6, active: [1,3,4,5,6,7,9], targets: [1,5,9] },
-            { id: 34, name: "No.034", level: 6, active: [1,2,3,6,7,8,9], targets: [3,4,8] },
-            { id: 35, name: "No.035", level: 6, active: [1,2,3,4,6,7,9], targets: [1,6,8] },
-            { id: 36, name: "No.036", level: 6, active: [1,2,3,4,7,8,9], targets: [3,5,7] }
+            { id: 34, name: "No.034", level: 6, active: [1,2,3,4,7,8,9], targets: [3,4,8] },
+            { id: 35, name: "No.035", level: 6, active: [1,2,4,5,6,7,8], targets: [1,6,8] },
+            { id: 36, name: "No.036", level: 6, active: [1,2,3,5,7,8,9], targets: [3,5,7] }
         ];
 
         let currentTileID = 1;
@@ -435,6 +460,13 @@
             const container = document.getElementById('grid-container');
             container.innerHTML = '';
 
+            // 1. 光暈層 (Glow Layer)
+            const glowLayer = document.createElement('div');
+            glowLayer.className = 'glow-overlay';
+            glowLayer.id = 'glow-layer';
+            container.appendChild(glowLayer);
+
+            // 2. 渲染方塊
             for(let i=0; i<9; i++) {
                 const config = currentLayoutConfig[i];
                 const block = userBoard[i];
@@ -454,7 +486,6 @@
                         const rot = block.rot * 90;
                         div.innerHTML = `<img src="${imagePath}" class="block-image" style="transform: rotate(${rot}deg);" draggable="false">`;
 
-                        // 互動層
                         const edgeZone = document.createElement('div');
                         edgeZone.className = 'zone-edge';
                         edgeZone.onclick = (e) => { e.stopPropagation(); rotateBlock(i); };
@@ -490,7 +521,9 @@
                 }
                 container.appendChild(div);
             }
-            checkWin();
+            
+            // 3. 檢查勝利 & 更新光暈
+            updateGlowsAndWin();
         }
 
         // --- 互動功能 ---
@@ -519,7 +552,6 @@
             renderGameGrid();
         }
 
-        // --- Picker ---
         function getAvailableBlocks() {
             const usedIds = new Set();
             userBoard.forEach(b => { if(b) usedIds.add(b.id); });
@@ -553,7 +585,7 @@
 
         function closePicker() { document.getElementById('picker-modal').style.display = 'none'; }
 
-        // --- 驗證與求解 ---
+        // --- 核心：光暈檢查與勝利判定 ---
         function getRotatedMatrix(matrix, times) {
             let m = JSON.parse(JSON.stringify(matrix));
             for (let t = 0; t < times; t++) {
@@ -565,14 +597,81 @@
             return m;
         }
 
-        function isValid(boardState) {
-            // 這個版本是給「全盤驗證」用的
+        function getFullGrid() {
             let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
-            // 檢查是否填滿
             for(let i=0; i<9; i++) {
-                if (currentLayoutConfig[i].type !== 'EMPTY' && !boardState[i]) return false;
+                if(!userBoard[i]) continue;
+                let b = userBoard[i];
+                let baseRow = Math.floor(i / 3) * 2;
+                let baseCol = (i % 3) * 2;
+                let matrix = getRotatedMatrix(BLOCKS[b.id][b.face], b.rot);
+                fullGrid[baseRow][baseCol] = matrix[0][0]; fullGrid[baseRow][baseCol+1] = matrix[0][1];
+                fullGrid[baseRow+1][baseCol] = matrix[1][0]; fullGrid[baseRow+1][baseCol+1] = matrix[1][1];
             }
-            // 填入
+            return fullGrid;
+        }
+
+        function updateGlowsAndWin() {
+            const glowLayer = document.getElementById('glow-layer');
+            glowLayer.innerHTML = ''; // 清空舊光暈
+            const grid = getFullGrid();
+            let allValid = true;
+
+            // 檢查橫排
+            for (let i = 0; i < 6; i++) {
+                let rowSet = new Set();
+                let hasZero = false;
+                for (let j = 0; j < 6; j++) {
+                    if (grid[i][j] === 0) hasZero = true;
+                    else rowSet.add(grid[i][j]);
+                }
+                
+                // 如果這排無0且不重複，加入光暈
+                if (!hasZero && rowSet.size === 6) {
+                    const glow = document.createElement('div');
+                    glow.className = 'glow-bar glow-row';
+                    glow.style.top = (i * 16.66 + 0.5) + '%'; // 微調位置
+                    glowLayer.appendChild(glow);
+                } else {
+                    if (rowSet.size < 6 && !hasZero) allValid = false; // 有衝突
+                }
+            }
+
+            // 檢查直排
+            for (let j = 0; j < 6; j++) {
+                let colSet = new Set();
+                let hasZero = false;
+                for (let i = 0; i < 6; i++) {
+                    if (grid[i][j] === 0) hasZero = true;
+                    else colSet.add(grid[i][j]);
+                }
+
+                if (!hasZero && colSet.size === 6) {
+                    const glow = document.createElement('div');
+                    glow.className = 'glow-bar glow-col';
+                    glow.style.left = (j * 16.66 + 0.5) + '%';
+                    glowLayer.appendChild(glow);
+                } else {
+                    if (colSet.size < 6 && !hasZero) allValid = false;
+                }
+            }
+
+            // 勝利判定
+            const isFull = userBoard.every((b, i) => currentLayoutConfig[i].type === 'EMPTY' || b !== null);
+            if (isFull && isValid(userBoard)) { // 使用嚴格檢查
+                document.getElementById('grid-container').classList.add('win-glow');
+                document.getElementById('status-text').innerHTML = "<span class='success-msg'>🎉 封印成功！</span>";
+                document.getElementById('btn-solve').style.display = 'none';
+            } else {
+                document.getElementById('grid-container').classList.remove('win-glow');
+                document.getElementById('status-text').innerText = isFull ? "❌ 封印失敗 (顏色衝突)" : "解題中...";
+            }
+        }
+
+        function isValid(boardState) {
+            // 這是 Solver 和最終勝利判定用的嚴格檢查
+            let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
+            // 先填
             for(let i=0; i<9; i++) {
                 if(!boardState[i]) continue;
                 let b = boardState[i];
@@ -582,7 +681,7 @@
                 fullGrid[baseRow][baseCol] = matrix[0][0]; fullGrid[baseRow][baseCol+1] = matrix[0][1];
                 fullGrid[baseRow+1][baseCol] = matrix[1][0]; fullGrid[baseRow+1][baseCol+1] = matrix[1][1];
             }
-            // 檢查
+            // 檢查重複
             for (let i = 0; i < 6; i++) {
                 let rowSeen = new Set(), colSeen = new Set();
                 for (let j = 0; j < 6; j++) {
@@ -595,35 +694,17 @@
             return true;
         }
 
-        function checkWin() {
-            const isFull = userBoard.every((b, i) => currentLayoutConfig[i].type === 'EMPTY' || b !== null);
-            if (isFull && isValid(userBoard)) {
-                document.getElementById('grid-container').classList.add('win-glow');
-                document.getElementById('status-text').innerHTML = "<span class='success-msg'>🎉 封印成功！</span>";
-                document.getElementById('btn-solve').style.display = 'none';
-            } else {
-                document.getElementById('grid-container').classList.remove('win-glow');
-                document.getElementById('status-text').innerText = isFull ? "❌ 封印失敗 (顏色衝突)" : "解題中...";
-            }
-        }
-
-        // --- 強制求解 (修正版) ---
+        // --- 強制求解 ---
         function forceSolve() {
             document.getElementById('status-text').innerText = "🔮 正在讀取天啟...";
-            
-            // 修正：從「全空」開始算，不要預填 Fixed Block，這樣遞迴時才能動態旋轉它
             let solverBoard = Array(9).fill(null);
             let usedIDs = new Set();
-            
-            // 只要把 Fixed 的 ID 標記為已使用，避免 Solve 格子去搶
             for(let i=0; i<9; i++) {
                 if (currentLayoutConfig[i].type === 'FIXED') {
                     usedIDs.add(currentLayoutConfig[i].id);
                 }
             }
-
             setTimeout(() => {
-                // 開始遞迴
                 if (solveStep(0, solverBoard, usedIDs)) {
                     userBoard = solverBoard; 
                     renderGameGrid();
@@ -636,32 +717,22 @@
         }
 
         function solveStep(idx, board, usedIDs) {
-            // 邊界條件：全部跑完代表找到解
             if (idx >= 9) return true;
-
             const config = currentLayoutConfig[idx];
+            if (config.type === 'EMPTY') return solveStep(idx + 1, board, usedIDs);
 
-            // 1. 如果是空位，直接跳下一格
-            if (config.type === 'EMPTY') {
-                return solveStep(idx + 1, board, usedIDs);
-            }
-
-            // 2. 如果是目標方塊 (FIXED)
             if (config.type === 'FIXED') {
                 const { id, face } = config;
-                // 嘗試 4 個旋轉角度
                 for (let rot = 0; rot < 4; rot++) {
                     board[idx] = { id, face, rot, isFixed: true };
-                    // 關鍵：只檢查當前部分盤面是否合法
                     if (isValidPartially(board)) {
                         if (solveStep(idx + 1, board, usedIDs)) return true;
                     }
                 }
-                board[idx] = null; // Backtrack
+                board[idx] = null;
                 return false;
             }
 
-            // 3. 如果是待解方塊 (SOLVE)
             if (config.type === 'SOLVE') {
                 for (let id = 1; id <= 9; id++) {
                     if (!usedIDs.has(id)) {
@@ -683,7 +754,6 @@
             return false;
         }
 
-        // 部分檢查 (允許空位，忽略尚未填入的格子)
         function isValidPartially(boardState) {
              let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
              for(let i=0; i<9; i++) {
