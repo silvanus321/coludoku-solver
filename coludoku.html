@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>色獨封印法典 (桌遊版)</title>
+    <title>色獨封印法典 (完美版)</title>
     <style>
         /* --- 1. 基礎設定 --- */
         body {
@@ -15,7 +15,7 @@
             padding: 20px;
             margin: 0;
             user-select: none;
-            -webkit-user-select: none; /* iOS 防選取 */
+            -webkit-user-select: none;
             touch-action: manipulation;
         }
 
@@ -44,7 +44,7 @@
             padding-bottom: 5px;
         }
 
-        /* --- 3. 按鈕與網格選擇器 --- */
+        /* --- 3. 按鈕與網格 --- */
         .level-selector {
             display: flex;
             justify-content: space-between;
@@ -96,7 +96,7 @@
         .img-btn img { width: 80%; height: 80%; object-fit: contain; }
         .btn-label { margin-top: 2px; font-size: 0.7rem; color: #555; font-weight: bold; }
 
-        /* --- 4. 遊戲區 (九宮格) --- */
+        /* --- 4. 遊戲區 --- */
         .main-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -112,7 +112,6 @@
             position: relative;
         }
 
-        /* 勝利光芒特效 */
         .main-grid.win-glow {
             box-shadow: 0 0 25px 8px rgba(255, 215, 0, 0.8);
             border: 2px solid #ffd700;
@@ -136,26 +135,20 @@
             aspect-ratio: 1 / 1;
         }
 
-        .block.fixed { border-color: #e74c3c; background-color: #fff5f5; } /* 目標方塊(紅框) */
-        .block.user-placed { border-color: #3498db; } /* 玩家方塊(藍框) */
+        .block.fixed { border-color: #e74c3c; background-color: #fff5f5; }
+        .block.user-placed { border-color: #3498db; }
         
         .block-image { width: 100%; height: 100%; object-fit: contain; transition: transform 0.2s ease; }
         .empty-slot { background-color: #e0e0e0; color: #bbb; font-size: 2rem; cursor: pointer; display: flex; justify-content: center; align-items: center; }
 
-        /* 互動層 (覆蓋在方塊上) */
-        .interaction-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
-        }
-        /* 邊緣 (旋轉) */
+        /* 互動層 */
         .zone-edge { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 11; }
-        /* 中心 (翻轉/更換) */
         .zone-center { 
             position: absolute; top: 20%; left: 20%; width: 60%; height: 60%; 
             z-index: 12; border-radius: 50%; 
-            /* background: rgba(0,0,0,0.1); 測試用 */
         }
 
-        /* --- 5. 底部按鈕與狀態 --- */
+        /* --- 5. 狀態與按鈕 --- */
         .status-msg { margin: 15px 0; font-weight: bold; font-size: 1.1rem; min-height: 24px; color: #333; }
         .success-msg { color: #f39c12; font-size: 1.3rem; text-shadow: 0 0 2px #fff; }
         
@@ -173,7 +166,7 @@
         }
         .solve-btn:hover { background-color: #95a5a6; }
 
-        /* --- 6. 彈出選單 (Picker) --- */
+        /* --- 6. 彈出選單 --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 999;
@@ -234,7 +227,6 @@
     </div>
 
     <script>
-        // --- 資料定義 ---
         const BLOCKS = {
             1: { B: [[1,2],[3,4]], W: [[4,3],[6,5]] },
             2: { B: [[3,4],[5,6]], W: [[6,5],[2,1]] },
@@ -325,7 +317,6 @@
             { id: 36, name: "No.036", level: 6, active: [1,2,3,4,7,8,9], targets: [3,5,7] }
         ];
 
-        // --- 全域變數 ---
         let currentTileID = 1;
         let currentShapeID = 1;
         let currentLayoutConfig = {}; 
@@ -333,7 +324,6 @@
         let pickingSlot = -1;
         let longPressTimer;
 
-        // --- 初始化 ---
         function init() {
             filterTilesByLevel(1);
             filterShapesByLevel(1);
@@ -410,7 +400,6 @@
             for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
             shape.active.forEach(pos => { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; });
             
-            // 設定目標
             shape.targets.forEach((pos, idx) => {
                 if (idx < tile.blocks.length) {
                     const blockDef = tile.blocks[idx];
@@ -424,7 +413,6 @@
                 }
             });
 
-            // 初始化盤面
             userBoard = Array(9).fill(null);
             for(let i=0; i<9; i++) {
                 if (currentLayoutConfig[i].type === 'FIXED') {
@@ -472,15 +460,11 @@
                         edgeZone.onclick = (e) => { e.stopPropagation(); rotateBlock(i); };
                         div.appendChild(edgeZone);
 
-                        // 如果不是固定方塊，加入中心互動(翻面/換塊)
                         if (!block.isFixed) {
                             const centerZone = document.createElement('div');
                             centerZone.className = 'zone-center';
-                            
-                            // 點擊翻轉
                             centerZone.onclick = (e) => { e.stopPropagation(); flipBlock(i); };
 
-                            // 長按換塊
                             const startLongPress = () => { longPressTimer = setTimeout(() => changeBlock(i), 600); };
                             const cancelLongPress = () => clearTimeout(longPressTimer);
 
@@ -490,7 +474,6 @@
                             centerZone.addEventListener('mouseleave', cancelLongPress);
                             centerZone.addEventListener('touchend', cancelLongPress);
 
-                            // 滑動翻轉
                             let startX = 0;
                             centerZone.addEventListener('touchstart', e => startX = e.touches[0].clientX);
                             centerZone.addEventListener('touchend', e => {
@@ -583,8 +566,9 @@
         }
 
         function isValid(boardState) {
+            // 這個版本是給「全盤驗證」用的
             let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
-            // 檢查完整性
+            // 檢查是否填滿
             for(let i=0; i<9; i++) {
                 if (currentLayoutConfig[i].type !== 'EMPTY' && !boardState[i]) return false;
             }
@@ -598,7 +582,7 @@
                 fullGrid[baseRow][baseCol] = matrix[0][0]; fullGrid[baseRow][baseCol+1] = matrix[0][1];
                 fullGrid[baseRow+1][baseCol] = matrix[1][0]; fullGrid[baseRow+1][baseCol+1] = matrix[1][1];
             }
-            // 檢查鄰接
+            // 檢查
             for (let i = 0; i < 6; i++) {
                 let rowSeen = new Set(), colSeen = new Set();
                 for (let j = 0; j < 6; j++) {
@@ -623,29 +607,24 @@
             }
         }
 
-        // --- 強制求解 ---
+        // --- 強制求解 (修正版) ---
         function forceSolve() {
             document.getElementById('status-text').innerText = "🔮 正在讀取天啟...";
             
-            // 準備資料：固定方塊(ID+Face固定，旋轉未知)，空白格(全未知)
+            // 修正：從「全空」開始算，不要預填 Fixed Block，這樣遞迴時才能動態旋轉它
             let solverBoard = Array(9).fill(null);
             let usedIDs = new Set();
             
+            // 只要把 Fixed 的 ID 標記為已使用，避免 Solve 格子去搶
             for(let i=0; i<9; i++) {
                 if (currentLayoutConfig[i].type === 'FIXED') {
-                    // 目標方塊：鎖定 ID 與 Face
-                    solverBoard[i] = { 
-                        id: currentLayoutConfig[i].id, 
-                        face: currentLayoutConfig[i].face, 
-                        rot: 0, // 初始 0，讓 solver 去轉
-                        isFixed: true 
-                    };
-                    usedIDs.add(solverBoard[i].id);
+                    usedIDs.add(currentLayoutConfig[i].id);
                 }
             }
 
             setTimeout(() => {
-                if (solveRecursively(solverBoard, usedIDs)) {
+                // 開始遞迴
+                if (solveStep(0, solverBoard, usedIDs)) {
                     userBoard = solverBoard; 
                     renderGameGrid();
                     document.getElementById('status-text').innerHTML = "<span style='color:blue'>✅ 已顯示解答</span>";
@@ -656,43 +635,38 @@
             }, 100);
         }
 
-        function solveRecursively(board, usedIDs) {
-            // 找下一個需要處理的格子 (包含尚未確定旋轉的 FIXED 格子)
-            // 這裡簡化邏輯：如果是 FIXED，我們嘗試 4 個方向。如果是 NULL，我們嘗試所有方塊+方向。
-            
-            // 為了遞迴方便，我們找第一個 "未完成" 的格子。
-            // 但這裡因為 board 混合了 null 和 object，我們用 index 遍歷
-            return solveStep(0, board, usedIDs);
-        }
-
         function solveStep(idx, board, usedIDs) {
-            if (idx >= 9) return isValidPartially(board); // 檢查邊界條件
+            // 邊界條件：全部跑完代表找到解
+            if (idx >= 9) return true;
 
-            // 如果是 EMPTY 格子，直接跳過
-            if (currentLayoutConfig[idx].type === 'EMPTY') {
+            const config = currentLayoutConfig[idx];
+
+            // 1. 如果是空位，直接跳下一格
+            if (config.type === 'EMPTY') {
                 return solveStep(idx + 1, board, usedIDs);
             }
 
-            // 處理當前格子
-            if (board[idx] && board[idx].isFixed) {
-                // FIXED 方塊：嘗試 4 種旋轉
-                let originalRot = board[idx].rot;
-                for (let r = 0; r < 4; r++) {
-                    board[idx].rot = r;
+            // 2. 如果是目標方塊 (FIXED)
+            if (config.type === 'FIXED') {
+                const { id, face } = config;
+                // 嘗試 4 個旋轉角度
+                for (let rot = 0; rot < 4; rot++) {
+                    board[idx] = { id, face, rot, isFixed: true };
+                    // 關鍵：只檢查當前部分盤面是否合法
                     if (isValidPartially(board)) {
                         if (solveStep(idx + 1, board, usedIDs)) return true;
                     }
                 }
-                board[idx].rot = originalRot; // Backtrack
+                board[idx] = null; // Backtrack
                 return false;
-            } else if (board[idx] === null) {
-                // 空白格：嘗試所有未使用的方塊
+            }
+
+            // 3. 如果是待解方塊 (SOLVE)
+            if (config.type === 'SOLVE') {
                 for (let id = 1; id <= 9; id++) {
                     if (!usedIDs.has(id)) {
                         usedIDs.add(id);
-                        // 嘗試 B/W 面
                         for (let face of ['B', 'W']) {
-                            // 嘗試 4 種旋轉
                             for (let rot = 0; rot < 4; rot++) {
                                 board[idx] = { id, face, rot, isFixed: false };
                                 if (isValidPartially(board)) {
@@ -700,21 +674,16 @@
                                 }
                             }
                         }
-                        board[idx] = null; // Backtrack
+                        board[idx] = null;
                         usedIDs.delete(id);
                     }
                 }
                 return false;
-            } else {
-                // 已經填了 User Block (理論上 Solver 應該重算，這裡視為已填)
-                // 為了強制解題，Solver 應該覆蓋 User 的錯誤答案。
-                // 簡單起見，Solver 其實是從頭算一遍，所以上面的 logic 適用於全新盤面。
-                // 如果是 forceSolve 呼叫的，board 只有 Fixed，其他是 null。
-                return solveStep(idx + 1, board, usedIDs); 
             }
+            return false;
         }
 
-        // 部分檢查 (允許空位)
+        // 部分檢查 (允許空位，忽略尚未填入的格子)
         function isValidPartially(boardState) {
              let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
              for(let i=0; i<9; i++) {
@@ -742,5 +711,3 @@
     </script>
 </body>
 </html>
-
-
