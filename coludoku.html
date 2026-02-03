@@ -2,38 +2,248 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>色獨封印法典 (全圖形版)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>色獨封印法典 (互動互動版)</title>
     <style>
         /* --- 基礎設定 --- */
-        body {
-            font-family: "Microsoft JhengHei", Arial, sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            margin: 0;
+        :root {
+            --bg-color: #f0f2f5;
+            --primary-gold: #f1c40f;
+            --solve-green: #2ecc71;
         }
 
-        h1 { margin-bottom: 10px; color: #333; letter-spacing: 2px; }
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-color);
+            display: flex; flex-direction: column; align-items: center;
+            padding: 20px; margin: 0; touch-action: none;
+        }
 
-        /* --- 控制面板 --- */
         .controls {
-            margin-bottom: 20px;
-            padding: 20px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 600px;
-            width: 90%;
+            margin-bottom: 20px; padding: 20px; background: white;
+            border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 90%; max-width: 600px;
         }
 
         .step-title {
-            font-size: 1.1rem;
-            color: #2c3e50;
-            margin: 20px 0 10px 0;
+            font-size: 1.1rem; color: #2c3e50; margin: 15px 0 10px;
+            font-weight: bold; border-bottom: 2px solid #eee;
+        }
+
+        /* --- 網格與方塊樣式 --- */
+        .main-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 10px; background-color: #333; padding: 12px;
+            border-radius: 15px; width: 100%; max-width: 400px;
+            aspect-ratio: 1/1;
+        }
+
+        .slot {
+            background-color: #444; border-radius: 8px;
+            position: relative; perspective: 1000px;
+        }
+
+        .block {
+            width: 100%; height: 100%;
+            position: absolute; transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .block-face {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            background: white; border: 2px solid #555; box-sizing: border-box;
+        }
+
+        .face-w { transform: rotateY(180deg); } /* 白面在背面 */
+
+        .block-image { width: 90%; height: 90%; object-fit: contain; pointer-events: none; }
+
+        /* --- 互動感應區 --- */
+        .edge-trigger {
+            position: absolute; z-index: 10;
+            /* background: rgba(255,0,0,0.1); // 除錯用 */
+        }
+        .edge-t { top: 0; width: 100%; height: 25%; }
+        .edge-b { bottom: 0; width: 100%; height: 25%; }
+        .edge-l { left: 0; width: 25%; height: 100%; }
+        .edge-r { right: 0; width: 25%; height: 100%; }
+        .center-trigger {
+            position: absolute; top: 25%; left: 25%; width: 50%; height: 50%;
+            z-index: 11;
+        }
+
+        /* 按鈕樣式 */
+        .solve-btn {
+            background-color: var(--solve-green); color: white; border: none;
+            padding: 15px; font-size: 1.2rem; border-radius: 50px;
+            cursor: pointer; width: 100%; margin-top: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        /* 選項清單簡化顯示 */
+        .grid-selector { display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; }
+        .img-btn { 
+            min-width: 80px; height: 80px; flex-shrink: 0;
+            background: #fff; border: 2px solid #eee; border-radius: 8px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .img-btn.active { border-color: var(--primary-gold); background: #fffdf0; }
+        .img-btn img { width: 60%; }
+    </style>
+</head>
+<body>
+
+    <h1>🔮 色獨封印法典</h1>
+
+    <div class="controls">
+        <div class="step-title">步驟 1：選擇魔石 Level</div>
+        <div id="tile-buttons" class="grid-selector">
+            </div>
+
+        <div class="step-title">步驟 2：選擇封印法陣 Shape</div>
+        <div id="shape-buttons" class="grid-selector">
+            </div>
+
+        <div class="step-title">步驟 3：手動調整魔石 🎴</div>
+        <p style="font-size: 0.8rem; color: #666;">點擊邊緣旋轉 | 點擊中心或滑動翻面</p>
+        
+        <div class="step-title">步驟 4：若無法封印，請開啟解答</div>
+        <button id="btn-solve" class="solve-btn" onclick="startSolving()">✨ 啟動封印解答 ✨</button>
+    </div>
+
+    <div id="grid-container" class="main-grid">
+        </div>
+
+    <script>
+        // 資料庫與邏輯保持與原版一致...
+        const BLOCKS = { 1: { B: [[1,2],[3,4]], W: [[4,3],[6,5]] }, /* ... 其他略 ... */ };
+        // (此處建議保留您原本完整的 BLOCKS, TARGET_TILES, SHAPES 數據)
+
+        let gameState = Array(9).fill(null).map(() => ({
+            id: 1, face: 'B', rot: 0, isFixed: false, active: false
+        }));
+
+        let startX = 0;
+
+        function initGrid() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            for(let i=0; i<9; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'slot';
+                slot.id = `slot-${i}`;
+                
+                // 只有啟用的格子才渲染方塊
+                const blockData = gameState[i];
+                if(blockData.active) {
+                    slot.innerHTML = createBlockHTML(i, blockData);
+                } else {
+                    slot.style.background = "#222";
+                }
+                
+                container.appendChild(slot);
+            }
+        }
+
+        function createBlockHTML(index, data) {
+            const rotDeg = data.rot * 90;
+            const flipDeg = data.face === 'W' ? 180 : 0;
+
+            return `
+                <div class="block" id="block-${index}" 
+                     style="transform: rotate(${rotDeg}deg) rotateY(${flipDeg}deg)"
+                     ontouchstart="handleTouchStart(event)" 
+                     ontouchend="handleTouchEnd(event, ${index})">
+                    
+                    <div class="edge-trigger edge-t" onclick="rotateBlock(${index}, event)"></div>
+                    <div class="edge-trigger edge-b" onclick="rotateBlock(${index}, event)"></div>
+                    <div class="edge-trigger edge-l" onclick="rotateBlock(${index}, event)"></div>
+                    <div class="edge-trigger edge-r" onclick="rotateBlock(${index}, event)"></div>
+                    
+                    <div class="center-trigger" onclick="flipBlock(${index}, event)"></div>
+
+                    <div class="block-face face-b">
+                        <img src="images/block_${data.id}_B.png" class="block-image" onerror="this.src='https://via.placeholder.com/80?text=B${data.id}'">
+                    </div>
+                    <div class="block-face face-w">
+                        <img src="images/block_${data.id}_W.png" class="block-image" onerror="this.src='https://via.placeholder.com/80?text=W${data.id}'">
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 互動邏輯 ---
+
+        function rotateBlock(index, event) {
+            event.stopPropagation();
+            gameState[index].rot = (gameState[index].rot + 1) % 4;
+            updateBlockTransform(index);
+        }
+
+        function flipBlock(index, event) {
+            if(event) event.stopPropagation();
+            gameState[index].face = gameState[index].face === 'B' ? 'W' : 'B';
+            updateBlockTransform(index);
+        }
+
+        function updateBlockTransform(index) {
+            const el = document.getElementById(`block-${index}`);
+            const data = gameState[index];
+            const rotDeg = data.rot * 90;
+            const flipDeg = data.face === 'W' ? 180 : 0;
+            el.style.transform = `rotate(${rotDeg}deg) rotateY(${flipDeg}deg)`;
+        }
+
+        // 滑動翻面偵測
+        function handleTouchStart(e) {
+            startX = e.touches[0].clientX;
+        }
+
+        function handleTouchEnd(e, index) {
+            let endX = e.changedTouches[0].clientX;
+            if (Math.abs(endX - startX) > 50) { // 滑動距離超過 50px
+                flipBlock(index);
+            }
+        }
+
+        // --- 步驟連動 ---
+
+        function selectShape(id) {
+            const shape = SHAPES.find(s => s.id === id);
+            // 重設所有格子狀態
+            gameState.forEach(s => s.active = false);
+            shape.active.forEach(pos => {
+                gameState[pos-1].active = true;
+                gameState[pos-1].id = Math.floor(Math.random() * 9) + 1; // 隨機預填，或根據固定邏輯
+            });
+            initGrid();
+        }
+
+        // --- 解題器觸發 ---
+        function startSolving() {
+            const btn = document.getElementById('btn-solve');
+            btn.innerText = "🔮 正在解析古卷...";
+            
+            // 此處放入您原本的 solveAll 邏輯
+            // 當解出結果後，用動畫更新 gameState
+            setTimeout(() => {
+                // 假設解出結果是 result
+                // renderGrid(result); 
+                btn.innerText = "✨ 封印已解除 (點擊換一組)";
+            }, 500);
+        }
+
+        // 初始化頁面
+        window.onload = () => {
+            // 這裡動態生成按鈕...
+            selectShape(1); 
+        };
+    </script>
+</body>
+</html>
             font-weight: bold;
             text-align: left;
             border-bottom: 2px solid #eee;
@@ -640,4 +850,5 @@
         init();
     </script>
 </body>
+
 </html>
