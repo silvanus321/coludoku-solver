@@ -1,11 +1,23 @@
+這是一個非常關鍵的修正！
+關於您遇到的問題：
+ * 代碼外洩 (Code Spilling)：您截圖中看到的亂碼（border-radius...）是因為上一版程式碼的 <style> 標籤可能在複製時不完整，或是瀏覽器解析錯誤。我這次會嚴格檢查 HTML 結構，確保乾淨。
+ * 目標方塊無法旋轉：這是邏輯上的限制。在「色獨」規則中，目標方塊確實是位置固定、顏色固定，但角度是需要玩家自己轉對的。
+本次修正重點 (v4.0 數位桌遊修正版)：
+ * 修復顯示錯誤：清理了所有可能導致亂碼的標籤。
+ * 解鎖目標旋轉：
+   * 紅色框框 (目標)：現在點擊邊緣可以旋轉了！但點擊中間依然鎖定（不能翻面或換方塊），符合遊戲規則。
+   * 藍色框框 (玩家)：全功能開放（旋轉、翻面、更換）。
+ * 優化解題器：按下「啟動封印解答」時，電腦會幫您把所有方塊（包含目標方塊）轉到正確的角度。
+🚀 完整修復版代碼
+請完全刪除舊的檔案內容，將下方代碼全選複製並貼上：
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>色獨封印法典 (數位桌遊版)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>色獨封印法典 (桌遊版)</title>
     <style>
-        /* --- 基礎設定 --- */
+        /* --- 1. 基礎設定 --- */
         body {
             font-family: "Microsoft JhengHei", Arial, sans-serif;
             background-color: #f0f2f5;
@@ -14,35 +26,37 @@
             align-items: center;
             padding: 20px;
             margin: 0;
-            user-select: none; /* 防止長按選取文字 */
-            -webkit-user-select: none;
+            user-select: none;
+            -webkit-user-select: none; /* iOS 防選取 */
+            touch-action: manipulation;
         }
 
         h1 { margin-bottom: 10px; color: #333; letter-spacing: 2px; }
 
-        /* --- 控制面板 --- */
+        /* --- 2. 控制面板 --- */
         .controls {
             margin-bottom: 20px;
-            padding: 20px;
+            padding: 15px;
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             text-align: center;
             max-width: 600px;
-            width: 90%;
+            width: 95%;
+            box-sizing: border-box;
         }
 
         .step-title {
             font-size: 1.1rem;
             color: #2c3e50;
-            margin: 20px 0 10px 0;
+            margin: 15px 0 10px 0;
             font-weight: bold;
             text-align: left;
             border-bottom: 2px solid #eee;
             padding-bottom: 5px;
         }
 
-        /* --- 等級與圖形按鈕 --- */
+        /* --- 3. 按鈕與網格選擇器 --- */
         .level-selector {
             display: flex;
             justify-content: space-between;
@@ -56,154 +70,133 @@
             flex: 1;
             border: none;
             background: transparent;
-            padding: 6px 0;
+            padding: 8px 0;
             cursor: pointer;
             border-radius: 6px;
             font-weight: bold;
             color: #666;
-            transition: all 0.2s;
             font-size: 0.85rem;
+            transition: all 0.2s;
         }
 
-        .level-btn:hover { background-color: #ddd; color: #333; }
         .level-btn.active { background-color: #3498db; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
         .grid-selector {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 8px;
         }
 
         .img-btn {
             background-color: white;
             border: 2px solid #eee;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.2s;
             aspect-ratio: 1 / 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 5px;
-            position: relative;
+            padding: 4px;
+            transition: transform 0.1s;
         }
 
-        .img-btn.active { border-color: #f1c40f; background-color: #fffcf0; transform: scale(1.05); }
+        .img-btn:active { transform: scale(0.95); }
+        .img-btn.active { border-color: #f1c40f; background-color: #fffcf0; box-shadow: 0 0 5px rgba(241, 196, 15, 0.5); }
         #tile-buttons .img-btn.active { border-color: #e67e22; background-color: #fdf2e9; }
-        .img-btn img { width: 85%; height: 85%; object-fit: contain; }
-        .btn-label { margin-top: 5px; font-size: 0.75rem; color: #555; font-weight: bold; }
-
-        /* --- 封印按鈕 --- */
-        .solve-btn {
-            background-color: #95a5a6; /* 預設灰色，表示是最後手段 */
-            color: white;
-            border: none;
-            padding: 12px 40px;
-            font-size: 1.2rem;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: transform 0.2s, background-color 0.3s;
-            margin-top: 25px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            width: 100%;
-        }
-        .solve-btn:hover { background-color: #7f8c8d; }
-        .solve-btn:active { transform: scale(0.98); }
         
-        .status-msg { margin-top: 15px; font-weight: bold; min-height: 24px; font-size: 1.1rem; }
-        .success-msg { color: #f1c40f; text-shadow: 0 0 5px orange; font-size: 1.3rem;} /* 勝利金光字 */
+        .img-btn img { width: 80%; height: 80%; object-fit: contain; }
+        .btn-label { margin-top: 2px; font-size: 0.7rem; color: #555; font-weight: bold; }
 
-        /* --- 九宮格 (遊戲區) --- */
+        /* --- 4. 遊戲區 (九宮格) --- */
         .main-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            gap: 6px;
             background-color: #333;
-            padding: 12px;
-            border-radius: 15px;
+            padding: 10px;
+            border-radius: 12px;
             width: 100%;
-            max-width: 400px;
+            max-width: 380px;
             aspect-ratio: 1 / 1;
             box-sizing: border-box;
+            margin: 0 auto;
             position: relative;
         }
 
-        /* 勝利發光特效 */
+        /* 勝利光芒特效 */
         .main-grid.win-glow {
-            box-shadow: 0 0 30px 10px rgba(241, 196, 15, 0.8);
-            border: 2px solid #f1c40f;
+            box-shadow: 0 0 25px 8px rgba(255, 215, 0, 0.8);
+            border: 2px solid #ffd700;
             animation: pulse 1.5s infinite;
         }
-
         @keyframes pulse {
-            0% { box-shadow: 0 0 20px 5px rgba(241, 196, 15, 0.6); }
-            50% { box-shadow: 0 0 40px 15px rgba(241, 196, 15, 1); }
-            100% { box-shadow: 0 0 20px 5px rgba(241, 196, 15, 0.6); }
+            0% { box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.6); }
+            50% { box-shadow: 0 0 30px 10px rgba(255, 215, 0, 1); }
+            100% { box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.6); }
         }
 
         .block {
             background-color: #fff;
-            border: 3px solid transparent;
+            border: 2px solid transparent;
             position: relative;
-            border-radius: 6px;
+            border-radius: 5px;
             overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
             aspect-ratio: 1 / 1;
-            touch-action: none; /* 防止滑動時捲動頁面 */
         }
 
-        .block.fixed { border-color: #e74c3c; background-color: #fceceb; } /* 題目鎖定 */
-        .block.user-placed { border-color: #3498db; } /* 玩家放置 */
-
-        .block-image { width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .empty-slot { background-color: #e0e0e0; color: #bbb; font-size: 1.5rem; cursor: pointer; }
-
-        /* --- 互動區域 (隱形層) --- */
-        .interaction-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10;
-            display: flex;
-            flex-wrap: wrap;
-        }
+        .block.fixed { border-color: #e74c3c; background-color: #fff5f5; } /* 目標方塊(紅框) */
+        .block.user-placed { border-color: #3498db; } /* 玩家方塊(藍框) */
         
-        /* 中心區域 (翻轉/長按) */
-        .zone-center {
-            position: absolute;
-            top: 25%; left: 25%; width: 50%; height: 50%;
-            /* background: rgba(255,0,0,0.2); 测试用 */
-            z-index: 12;
-            border-radius: 50%;
+        .block-image { width: 100%; height: 100%; object-fit: contain; transition: transform 0.2s ease; }
+        .empty-slot { background-color: #e0e0e0; color: #bbb; font-size: 2rem; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+
+        /* 互動層 (覆蓋在方塊上) */
+        .interaction-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+        }
+        /* 邊緣 (旋轉) */
+        .zone-edge { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 11; }
+        /* 中心 (翻轉/更換) */
+        .zone-center { 
+            position: absolute; top: 20%; left: 20%; width: 60%; height: 60%; 
+            z-index: 12; border-radius: 50%; 
+            /* background: rgba(0,0,0,0.1); 測試用 */
         }
 
-        /* 邊緣區域 (旋轉) - 覆蓋整個方塊，但在 Center 下面 */
-        .zone-edge {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 11;
+        /* --- 5. 底部按鈕與狀態 --- */
+        .status-msg { margin: 15px 0; font-weight: bold; font-size: 1.1rem; min-height: 24px; color: #333; }
+        .success-msg { color: #f39c12; font-size: 1.3rem; text-shadow: 0 0 2px #fff; }
+        
+        .solve-btn {
+            background-color: #7f8c8d;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+        .solve-btn:hover { background-color: #95a5a6; }
 
-        /* --- 彈出選單 (Block Picker) --- */
+        /* --- 6. 彈出選單 (Picker) --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 100;
+            background: rgba(0,0,0,0.6); z-index: 999;
             display: none; justify-content: center; align-items: center;
         }
         .modal-content {
-            background: white; padding: 20px; border-radius: 15px;
-            width: 80%; max-width: 350px;
-            text-align: center;
+            background: white; padding: 20px; border-radius: 12px; width: 85%; max-width: 350px; text-align: center;
         }
-        .block-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px;
-        }
-        .picker-btn {
-            border: 1px solid #ddd; border-radius: 8px; padding: 5px; cursor: pointer;
-        }
-        .picker-btn img { width: 100%; }
+        .picker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .picker-item { border: 1px solid #ddd; border-radius: 5px; padding: 3px; cursor: pointer; }
+        .picker-item img { width: 100%; }
 
     </style>
 </head>
@@ -235,24 +228,25 @@
         </div>
         <div class="grid-selector" id="shape-buttons"></div>
 
-        <div class="step-title">步驟 3：解除封印 (點擊 ? 放置方塊)</div>
-        <div class="status-msg" id="status-text">準備開始...</div>
+        <div class="step-title">步驟 3：手動調整魔石 🎴</div>
+        <div style="font-size:0.8rem; color:#666; margin-bottom:5px;">點擊邊緣旋轉 | 點擊中心或滑動翻面</div>
         
         <div id="grid-container" class="main-grid"></div>
+        <div id="status-text" class="status-msg">請選擇題目...</div>
 
-        <button id="btn-solve" class="solve-btn" onclick="forceSolve()">🔓 解不開？點此顯示解答</button>
+        <button id="btn-solve" class="solve-btn" onclick="forceSolve()">🔓 啟動封印解答 ✨</button>
     </div>
 
     <div id="picker-modal" class="modal-overlay" onclick="closePicker()">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h3>選擇方塊</h3>
-            <div id="picker-grid" class="block-grid"></div>
-            <button onclick="closePicker()" style="margin-top:15px; padding:8px 20px; background:#ddd; border:none; border-radius:5px;">取消</button>
+            <h3>選擇要放入的魔石</h3>
+            <div id="picker-grid" class="picker-grid"></div>
+            <button onclick="closePicker()" style="margin-top:15px; padding:10px 30px; background:#ddd; border:none; border-radius:20px; font-size:1rem;">取消</button>
         </div>
     </div>
 
     <script>
-        // --- 資料庫 ---
+        // --- 資料定義 ---
         const BLOCKS = {
             1: { B: [[1,2],[3,4]], W: [[4,3],[6,5]] },
             2: { B: [[3,4],[5,6]], W: [[6,5],[2,1]] },
@@ -343,14 +337,14 @@
             { id: 36, name: "No.036", level: 6, active: [1,2,3,4,7,8,9], targets: [3,5,7] }
         ];
 
-        // --- 狀態變數 ---
+        // --- 全域變數 ---
         let currentTileID = 1;
         let currentShapeID = 1;
-        let currentLayoutConfig = {}; // 唯讀：題目設定
-        let userBoard = Array(9).fill(null); // 玩家目前狀態
-        let pickingSlot = -1; // 目前正在選方塊的格子
+        let currentLayoutConfig = {}; 
+        let userBoard = Array(9).fill(null);
+        let pickingSlot = -1;
         let longPressTimer;
-        
+
         // --- 初始化 ---
         function init() {
             filterTilesByLevel(1);
@@ -359,7 +353,7 @@
             selectShape(1);
         }
 
-        // --- 過濾器邏輯 (Tile & Shape) ---
+        // --- 介面渲染 ---
         function filterTilesByLevel(level) {
             updateLevelBtns('tile-level-buttons', level);
             renderButtons('tile-buttons', TARGET_TILES.filter(t => t.level === level), 'tile', selectTile, currentTileID);
@@ -386,7 +380,6 @@
                 btn.innerHTML = `<img src="${imgPath}" alt="${label}" onerror="this.style.display='none'"><div class="btn-label">${label}</div>`;
                 container.appendChild(btn);
             });
-            // Auto-select first if current not in list
             if (dataList.length > 0 && !dataList.some(i => i.id === currentId)) {
                 clickHandler(dataList[0].id);
             }
@@ -407,7 +400,6 @@
             });
         }
 
-        // --- 選擇邏輯 ---
         function selectTile(id) {
             currentTileID = id;
             updateActiveState('tile-buttons', id, 'tile');
@@ -420,7 +412,7 @@
             setupGame();
         }
 
-        // --- 遊戲核心設定 (Setup) ---
+        // --- 遊戲邏輯 ---
         function setupGame() {
             const shape = SHAPES.find(s => s.id === currentShapeID);
             const tile = TARGET_TILES.find(t => t.id === currentTileID);
@@ -430,7 +422,7 @@
             for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
             shape.active.forEach(pos => { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; });
             
-            // 設定固定魔石
+            // 設定目標
             shape.targets.forEach((pos, idx) => {
                 if (idx < tile.blocks.length) {
                     const blockDef = tile.blocks[idx];
@@ -444,7 +436,7 @@
                 }
             });
 
-            // 初始化玩家盤面 (填入題目，其他為空)
+            // 初始化盤面
             userBoard = Array(9).fill(null);
             for(let i=0; i<9; i++) {
                 if (currentLayoutConfig[i].type === 'FIXED') {
@@ -457,13 +449,12 @@
                 }
             }
 
-            document.getElementById('status-text').innerHTML = "準備就緒，請點擊 ? 開始解題";
+            document.getElementById('status-text').innerHTML = "遊戲開始";
             document.getElementById('grid-container').classList.remove('win-glow');
-            document.getElementById('btn-solve').style.display = 'block'; // 顯示封印按鈕
+            document.getElementById('btn-solve').style.display = 'block';
             renderGameGrid();
         }
 
-        // --- 渲染遊戲盤面 (Interactive) ---
         function renderGameGrid() {
             const container = document.getElementById('grid-container');
             container.innerHTML = '';
@@ -474,48 +465,35 @@
                 const div = document.createElement('div');
                 
                 if (config.type === 'EMPTY') {
-                    div.className = 'block empty-slot'; // 空白格，不顯示
+                    div.className = 'block empty-slot';
                     div.style.visibility = 'hidden';
                 } else {
                     div.className = 'block';
                     
                     if (block) {
-                        // 已有方塊 (Fixed 或 User Placed)
                         if (block.isFixed) div.classList.add('fixed');
                         else div.classList.add('user-placed');
 
                         const imagePath = `images/block_${block.id}_${block.face}.png`;
                         const rot = block.rot * 90;
-                        
                         div.innerHTML = `<img src="${imagePath}" class="block-image" style="transform: rotate(${rot}deg);" draggable="false">`;
 
-                        // 如果不是固定方塊，加入互動層
-                        if (!block.isFixed) {
-                            // 1. 邊緣層 (旋轉)
-                            const edgeZone = document.createElement('div');
-                            edgeZone.className = 'zone-edge';
-                            edgeZone.onclick = (e) => {
-                                e.stopPropagation();
-                                rotateBlock(i);
-                            };
-                            div.appendChild(edgeZone);
+                        // 互動層
+                        const edgeZone = document.createElement('div');
+                        edgeZone.className = 'zone-edge';
+                        edgeZone.onclick = (e) => { e.stopPropagation(); rotateBlock(i); };
+                        div.appendChild(edgeZone);
 
-                            // 2. 中心層 (翻轉/長按)
+                        // 如果不是固定方塊，加入中心互動(翻面/換塊)
+                        if (!block.isFixed) {
                             const centerZone = document.createElement('div');
                             centerZone.className = 'zone-center';
                             
                             // 點擊翻轉
-                            centerZone.onclick = (e) => {
-                                e.stopPropagation();
-                                flipBlock(i);
-                            };
+                            centerZone.onclick = (e) => { e.stopPropagation(); flipBlock(i); };
 
-                            // 長按換方塊 (手機/滑鼠通用)
-                            const startLongPress = (e) => {
-                                longPressTimer = setTimeout(() => {
-                                    changeBlock(i);
-                                }, 600); // 600ms 為長按
-                            };
+                            // 長按換塊
+                            const startLongPress = () => { longPressTimer = setTimeout(() => changeBlock(i), 600); };
                             const cancelLongPress = () => clearTimeout(longPressTimer);
 
                             centerZone.addEventListener('mousedown', startLongPress);
@@ -524,32 +502,27 @@
                             centerZone.addEventListener('mouseleave', cancelLongPress);
                             centerZone.addEventListener('touchend', cancelLongPress);
 
-                            // 簡易滑動偵測 (Swipe to flip) - 選擇性增加
+                            // 滑動翻轉
                             let startX = 0;
                             centerZone.addEventListener('touchstart', e => startX = e.touches[0].clientX);
                             centerZone.addEventListener('touchend', e => {
-                                if (Math.abs(e.changedTouches[0].clientX - startX) > 30) {
-                                    flipBlock(i); // 滑動也視為翻轉
-                                }
+                                if (Math.abs(e.changedTouches[0].clientX - startX) > 30) flipBlock(i);
                             });
 
                             div.appendChild(centerZone);
                         }
-
                     } else {
-                        // 空白待解格 (?)
                         div.innerHTML = '<span style="color:#ccc; font-size:2rem;">?</span>';
-                        div.style.cursor = 'pointer';
+                        div.className = 'block empty-slot';
                         div.onclick = () => openPicker(i);
                     }
                 }
                 container.appendChild(div);
             }
-            checkWin(); // 每次渲染後檢查是否勝利
+            checkWin();
         }
 
-        // --- 玩家互動邏輯 ---
-        
+        // --- 互動功能 ---
         function rotateBlock(index) {
             if (userBoard[index]) {
                 userBoard[index].rot = (userBoard[index].rot + 1) % 4;
@@ -558,28 +531,24 @@
         }
 
         function flipBlock(index) {
-            if (userBoard[index]) {
+            if (userBoard[index] && !userBoard[index].isFixed) {
                 userBoard[index].face = userBoard[index].face === 'B' ? 'W' : 'B';
                 renderGameGrid();
             }
         }
 
         function changeBlock(index) {
-            // 長按切換到下一個可用方塊
             const currentId = userBoard[index].id;
             const available = getAvailableBlocks();
-            // 把自己加回去清單以便循環
             available.push(currentId);
             available.sort((a,b) => a-b);
-            
             let nextIndex = available.indexOf(currentId) + 1;
             if (nextIndex >= available.length) nextIndex = 0;
-            
             userBoard[index].id = available[nextIndex];
             renderGameGrid();
         }
 
-        // --- 方塊選擇器 (Picker) ---
+        // --- Picker ---
         function getAvailableBlocks() {
             const usedIds = new Set();
             userBoard.forEach(b => { if(b) usedIds.add(b.id); });
@@ -594,35 +563,26 @@
             grid.innerHTML = '';
 
             if (available.length === 0) {
-                grid.innerHTML = '<p>沒有可用的方塊了<br>請長按現有方塊進行替換</p>';
+                grid.innerHTML = '<p style="grid-column:span 3">無可用方塊<br>請長按現有方塊更換</p>';
             }
 
             available.forEach(id => {
-                const img = document.createElement('div');
-                img.className = 'picker-btn';
-                // 顯示兩種面相供選擇
-                img.innerHTML = `<img src="images/block_${id}_B.png">`;
-                img.onclick = () => {
-                    placeBlock(id);
+                const div = document.createElement('div');
+                div.className = 'picker-item';
+                div.innerHTML = `<img src="images/block_${id}_B.png">`;
+                div.onclick = () => {
+                    userBoard[pickingSlot] = { id: id, face: 'B', rot: 0, isFixed: false };
                     closePicker();
+                    renderGameGrid();
                 };
-                grid.appendChild(img);
+                grid.appendChild(div);
             });
-
             document.getElementById('picker-modal').style.display = 'flex';
         }
 
-        function closePicker() {
-            document.getElementById('picker-modal').style.display = 'none';
-        }
+        function closePicker() { document.getElementById('picker-modal').style.display = 'none'; }
 
-        function placeBlock(id) {
-            userBoard[pickingSlot] = { id: id, face: 'B', rot: 0, isFixed: false }; // 預設 B面
-            renderGameGrid();
-        }
-
-        // --- 勝利判定與求解器 ---
-
+        // --- 驗證與求解 ---
         function getRotatedMatrix(matrix, times) {
             let m = JSON.parse(JSON.stringify(matrix));
             for (let t = 0; t < times; t++) {
@@ -636,11 +596,11 @@
 
         function isValid(boardState) {
             let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
-            // 檢查是否還有空位 (只針對 active 的區域)
+            // 檢查完整性
             for(let i=0; i<9; i++) {
                 if (currentLayoutConfig[i].type !== 'EMPTY' && !boardState[i]) return false;
             }
-
+            // 填入
             for(let i=0; i<9; i++) {
                 if(!boardState[i]) continue;
                 let b = boardState[i];
@@ -650,7 +610,7 @@
                 fullGrid[baseRow][baseCol] = matrix[0][0]; fullGrid[baseRow][baseCol+1] = matrix[0][1];
                 fullGrid[baseRow+1][baseCol] = matrix[1][0]; fullGrid[baseRow+1][baseCol+1] = matrix[1][1];
             }
-            
+            // 檢查鄰接
             for (let i = 0; i < 6; i++) {
                 let rowSeen = new Set(), colSeen = new Set();
                 for (let j = 0; j < 6; j++) {
@@ -664,75 +624,109 @@
         }
 
         function checkWin() {
-            // 只有當所有該填的格子都填滿時才檢查
-            const isFull = userBoard.every((b, i) => {
-                return currentLayoutConfig[i].type === 'EMPTY' || b !== null;
-            });
-
+            const isFull = userBoard.every((b, i) => currentLayoutConfig[i].type === 'EMPTY' || b !== null);
             if (isFull && isValid(userBoard)) {
                 document.getElementById('grid-container').classList.add('win-glow');
-                document.getElementById('status-text').innerHTML = "<span class='success-msg'>🎉 封印成功！恭喜過關！</span>";
-                document.getElementById('btn-solve').style.display = 'none'; // 隱藏按鈕
+                document.getElementById('status-text').innerHTML = "<span class='success-msg'>🎉 封印成功！</span>";
+                document.getElementById('btn-solve').style.display = 'none';
             } else {
                 document.getElementById('grid-container').classList.remove('win-glow');
                 document.getElementById('status-text').innerText = isFull ? "❌ 封印失敗 (顏色衝突)" : "解題中...";
             }
         }
 
-        // --- 強制求解 (Step 4) ---
+        // --- 強制求解 ---
         function forceSolve() {
             document.getElementById('status-text').innerText = "🔮 正在讀取天啟...";
             
-            // 複製一份盤面給 solver 用，只保留 Fixed
+            // 準備資料：固定方塊(ID+Face固定，旋轉未知)，空白格(全未知)
             let solverBoard = Array(9).fill(null);
             let usedIDs = new Set();
             
             for(let i=0; i<9; i++) {
                 if (currentLayoutConfig[i].type === 'FIXED') {
-                    solverBoard[i] = userBoard[i]; // 使用目前的 Fixed 設定
-                    usedIDs.add(userBoard[i].id);
+                    // 目標方塊：鎖定 ID 與 Face
+                    solverBoard[i] = { 
+                        id: currentLayoutConfig[i].id, 
+                        face: currentLayoutConfig[i].face, 
+                        rot: 0, // 初始 0，讓 solver 去轉
+                        isFixed: true 
+                    };
+                    usedIDs.add(solverBoard[i].id);
                 }
             }
 
             setTimeout(() => {
                 if (solveRecursively(solverBoard, usedIDs)) {
-                    userBoard = solverBoard; // 更新玩家盤面為解答
+                    userBoard = solverBoard; 
                     renderGameGrid();
                     document.getElementById('status-text').innerHTML = "<span style='color:blue'>✅ 已顯示解答</span>";
+                    document.getElementById('grid-container').classList.add('win-glow');
                 } else {
-                    document.getElementById('status-text').innerText = "❌ 此題無解 (可能是題目設定有誤)";
+                    document.getElementById('status-text').innerText = "❌ 此題無解";
                 }
             }, 100);
         }
 
         function solveRecursively(board, usedIDs) {
-            let slot = -1;
-            for(let i=0; i<9; i++) {
-                if (currentLayoutConfig[i].type !== 'EMPTY' && board[i] === null) {
-                    slot = i; break;
-                }
-            }
-            if (slot === -1) return true;
-
-            for (let id = 1; id <= 9; id++) {
-                if (!usedIDs.has(id)) {
-                    for (let face of ['B', 'W']) {
-                        for (let rot = 0; rot < 4; rot++) {
-                            board[slot] = { id, face, rot, isFixed: false };
-                            if (isValidPartially(board)) { // 使用部分檢查
-                                usedIDs.add(id);
-                                if (solveRecursively(board, usedIDs)) return true;
-                                usedIDs.delete(id);
-                            }
-                            board[slot] = null;
-                        }
-                    }
-                }
-            }
-            return false;
+            // 找下一個需要處理的格子 (包含尚未確定旋轉的 FIXED 格子)
+            // 這裡簡化邏輯：如果是 FIXED，我們嘗試 4 個方向。如果是 NULL，我們嘗試所有方塊+方向。
+            
+            // 為了遞迴方便，我們找第一個 "未完成" 的格子。
+            // 但這裡因為 board 混合了 null 和 object，我們用 index 遍歷
+            return solveStep(0, board, usedIDs);
         }
 
-        // 部分有效性檢查 (給 Solver 用，允許空位)
+        function solveStep(idx, board, usedIDs) {
+            if (idx >= 9) return isValidPartially(board); // 檢查邊界條件
+
+            // 如果是 EMPTY 格子，直接跳過
+            if (currentLayoutConfig[idx].type === 'EMPTY') {
+                return solveStep(idx + 1, board, usedIDs);
+            }
+
+            // 處理當前格子
+            if (board[idx] && board[idx].isFixed) {
+                // FIXED 方塊：嘗試 4 種旋轉
+                let originalRot = board[idx].rot;
+                for (let r = 0; r < 4; r++) {
+                    board[idx].rot = r;
+                    if (isValidPartially(board)) {
+                        if (solveStep(idx + 1, board, usedIDs)) return true;
+                    }
+                }
+                board[idx].rot = originalRot; // Backtrack
+                return false;
+            } else if (board[idx] === null) {
+                // 空白格：嘗試所有未使用的方塊
+                for (let id = 1; id <= 9; id++) {
+                    if (!usedIDs.has(id)) {
+                        usedIDs.add(id);
+                        // 嘗試 B/W 面
+                        for (let face of ['B', 'W']) {
+                            // 嘗試 4 種旋轉
+                            for (let rot = 0; rot < 4; rot++) {
+                                board[idx] = { id, face, rot, isFixed: false };
+                                if (isValidPartially(board)) {
+                                    if (solveStep(idx + 1, board, usedIDs)) return true;
+                                }
+                            }
+                        }
+                        board[idx] = null; // Backtrack
+                        usedIDs.delete(id);
+                    }
+                }
+                return false;
+            } else {
+                // 已經填了 User Block (理論上 Solver 應該重算，這裡視為已填)
+                // 為了強制解題，Solver 應該覆蓋 User 的錯誤答案。
+                // 簡單起見，Solver 其實是從頭算一遍，所以上面的 logic 適用於全新盤面。
+                // 如果是 forceSolve 呼叫的，board 只有 Fixed，其他是 null。
+                return solveStep(idx + 1, board, usedIDs); 
+            }
+        }
+
+        // 部分檢查 (允許空位)
         function isValidPartially(boardState) {
              let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
              for(let i=0; i<9; i++) {
@@ -759,823 +753,5 @@
         init();
     </script>
 </body>
-</html>
-            border-radius: 15px; width: 100%; max-width: 400px;
-            aspect-ratio: 1/1;
-        }
-
-        .slot {
-            background-color: #444; border-radius: 8px;
-            position: relative; perspective: 1000px;
-        }
-
-        .block {
-            width: 100%; height: 100%;
-            position: absolute; transform-style: preserve-3d;
-            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-        }
-
-        .block-face {
-            position: absolute; width: 100%; height: 100%;
-            backface-visibility: hidden; border-radius: 6px;
-            display: flex; align-items: center; justify-content: center;
-            background: white; border: 2px solid #555; box-sizing: border-box;
-        }
-
-        .face-w { transform: rotateY(180deg); } /* 白面在背面 */
-
-        .block-image { width: 90%; height: 90%; object-fit: contain; pointer-events: none; }
-
-        /* --- 互動感應區 --- */
-        .edge-trigger {
-            position: absolute; z-index: 10;
-            /* background: rgba(255,0,0,0.1); // 除錯用 */
-        }
-        .edge-t { top: 0; width: 100%; height: 25%; }
-        .edge-b { bottom: 0; width: 100%; height: 25%; }
-        .edge-l { left: 0; width: 25%; height: 100%; }
-        .edge-r { right: 0; width: 25%; height: 100%; }
-        .center-trigger {
-            position: absolute; top: 25%; left: 25%; width: 50%; height: 50%;
-            z-index: 11;
-        }
-
-        /* 按鈕樣式 */
-        .solve-btn {
-            background-color: var(--solve-green); color: white; border: none;
-            padding: 15px; font-size: 1.2rem; border-radius: 50px;
-            cursor: pointer; width: 100%; margin-top: 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        /* 選項清單簡化顯示 */
-        .grid-selector { display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; }
-        .img-btn { 
-            min-width: 80px; height: 80px; flex-shrink: 0;
-            background: #fff; border: 2px solid #eee; border-radius: 8px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .img-btn.active { border-color: var(--primary-gold); background: #fffdf0; }
-        .img-btn img { width: 60%; }
-    </style>
-</head>
-<body>
-
-    <h1>🔮 色獨封印法典</h1>
-
-    <div class="controls">
-        <div class="step-title">步驟 1：選擇魔石 Level</div>
-        <div id="tile-buttons" class="grid-selector">
-            </div>
-
-        <div class="step-title">步驟 2：選擇封印法陣 Shape</div>
-        <div id="shape-buttons" class="grid-selector">
-            </div>
-
-        <div class="step-title">步驟 3：手動調整魔石 🎴</div>
-        <p style="font-size: 0.8rem; color: #666;">點擊邊緣旋轉 | 點擊中心或滑動翻面</p>
-        
-        <div class="step-title">步驟 4：若無法封印，請開啟解答</div>
-        <button id="btn-solve" class="solve-btn" onclick="startSolving()">✨ 啟動封印解答 ✨</button>
-    </div>
-
-    <div id="grid-container" class="main-grid">
-        </div>
-
-    <script>
-        // 資料庫與邏輯保持與原版一致...
-        const BLOCKS = { 1: { B: [[1,2],[3,4]], W: [[4,3],[6,5]] }, /* ... 其他略 ... */ };
-        // (此處建議保留您原本完整的 BLOCKS, TARGET_TILES, SHAPES 數據)
-
-        let gameState = Array(9).fill(null).map(() => ({
-            id: 1, face: 'B', rot: 0, isFixed: false, active: false
-        }));
-
-        let startX = 0;
-
-        function initGrid() {
-            const container = document.getElementById('grid-container');
-            container.innerHTML = '';
-            for(let i=0; i<9; i++) {
-                const slot = document.createElement('div');
-                slot.className = 'slot';
-                slot.id = `slot-${i}`;
-                
-                // 只有啟用的格子才渲染方塊
-                const blockData = gameState[i];
-                if(blockData.active) {
-                    slot.innerHTML = createBlockHTML(i, blockData);
-                } else {
-                    slot.style.background = "#222";
-                }
-                
-                container.appendChild(slot);
-            }
-        }
-
-        function createBlockHTML(index, data) {
-            const rotDeg = data.rot * 90;
-            const flipDeg = data.face === 'W' ? 180 : 0;
-
-            return `
-                <div class="block" id="block-${index}" 
-                     style="transform: rotate(${rotDeg}deg) rotateY(${flipDeg}deg)"
-                     ontouchstart="handleTouchStart(event)" 
-                     ontouchend="handleTouchEnd(event, ${index})">
-                    
-                    <div class="edge-trigger edge-t" onclick="rotateBlock(${index}, event)"></div>
-                    <div class="edge-trigger edge-b" onclick="rotateBlock(${index}, event)"></div>
-                    <div class="edge-trigger edge-l" onclick="rotateBlock(${index}, event)"></div>
-                    <div class="edge-trigger edge-r" onclick="rotateBlock(${index}, event)"></div>
-                    
-                    <div class="center-trigger" onclick="flipBlock(${index}, event)"></div>
-
-                    <div class="block-face face-b">
-                        <img src="images/block_${data.id}_B.png" class="block-image" onerror="this.src='https://via.placeholder.com/80?text=B${data.id}'">
-                    </div>
-                    <div class="block-face face-w">
-                        <img src="images/block_${data.id}_W.png" class="block-image" onerror="this.src='https://via.placeholder.com/80?text=W${data.id}'">
-                    </div>
-                </div>
-            `;
-        }
-
-        // --- 互動邏輯 ---
-
-        function rotateBlock(index, event) {
-            event.stopPropagation();
-            gameState[index].rot = (gameState[index].rot + 1) % 4;
-            updateBlockTransform(index);
-        }
-
-        function flipBlock(index, event) {
-            if(event) event.stopPropagation();
-            gameState[index].face = gameState[index].face === 'B' ? 'W' : 'B';
-            updateBlockTransform(index);
-        }
-
-        function updateBlockTransform(index) {
-            const el = document.getElementById(`block-${index}`);
-            const data = gameState[index];
-            const rotDeg = data.rot * 90;
-            const flipDeg = data.face === 'W' ? 180 : 0;
-            el.style.transform = `rotate(${rotDeg}deg) rotateY(${flipDeg}deg)`;
-        }
-
-        // 滑動翻面偵測
-        function handleTouchStart(e) {
-            startX = e.touches[0].clientX;
-        }
-
-        function handleTouchEnd(e, index) {
-            let endX = e.changedTouches[0].clientX;
-            if (Math.abs(endX - startX) > 50) { // 滑動距離超過 50px
-                flipBlock(index);
-            }
-        }
-
-        // --- 步驟連動 ---
-
-        function selectShape(id) {
-            const shape = SHAPES.find(s => s.id === id);
-            // 重設所有格子狀態
-            gameState.forEach(s => s.active = false);
-            shape.active.forEach(pos => {
-                gameState[pos-1].active = true;
-                gameState[pos-1].id = Math.floor(Math.random() * 9) + 1; // 隨機預填，或根據固定邏輯
-            });
-            initGrid();
-        }
-
-        // --- 解題器觸發 ---
-        function startSolving() {
-            const btn = document.getElementById('btn-solve');
-            btn.innerText = "🔮 正在解析古卷...";
-            
-            // 此處放入您原本的 solveAll 邏輯
-            // 當解出結果後，用動畫更新 gameState
-            setTimeout(() => {
-                // 假設解出結果是 result
-                // renderGrid(result); 
-                btn.innerText = "✨ 封印已解除 (點擊換一組)";
-            }, 500);
-        }
-
-        // 初始化頁面
-        window.onload = () => {
-            // 這裡動態生成按鈕...
-            selectShape(1); 
-        };
-    </script>
-</body>
-</html>
-            font-weight: bold;
-            text-align: left;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 5px;
-        }
-
-        /* --- 等級選擇器 --- */
-        .level-selector {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            background: #eee;
-            padding: 4px;
-            border-radius: 8px;
-        }
-
-        .level-btn {
-            flex: 1;
-            border: none;
-            background: transparent;
-            padding: 6px 0;
-            cursor: pointer;
-            border-radius: 6px;
-            font-weight: bold;
-            color: #666;
-            transition: all 0.2s;
-            font-size: 0.85rem;
-        }
-
-        .level-btn:hover { background-color: #ddd; color: #333; }
-        .level-btn.active { background-color: #3498db; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-
-        /* --- 圖片按鈕網格 --- */
-        .grid-selector {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-
-        .img-btn {
-            background-color: white;
-            border: 2px solid #eee;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            aspect-ratio: 1 / 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 5px;
-            position: relative;
-        }
-
-        .img-btn:hover { border-color: #3498db; transform: translateY(-3px); }
-        .img-btn.active { border-color: #f1c40f; background-color: #fffcf0; box-shadow: 0 0 8px rgba(241, 196, 15, 0.4); transform: scale(1.05); }
-        .img-btn img { width: 85%; height: 85%; object-fit: contain; }
-        
-        .btn-label { margin-top: 5px; font-size: 0.75rem; color: #555; font-weight: bold; }
-        #tile-buttons .img-btn.active { border-color: #e67e22; background-color: #fdf2e9; } 
-        
-        /* --- 執行按鈕與訊息 --- */
-        .solve-btn {
-            background-color: #2ecc71;
-            color: white;
-            border: none;
-            padding: 12px 40px;
-            font-size: 1.2rem;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            margin-top: 25px;
-            box-shadow: 0 4px 6px rgba(46, 204, 113, 0.3);
-            width: 100%;
-        }
-        .solve-btn:active { transform: scale(0.98); }
-        .solve-btn:disabled { background-color: #95a5a6; cursor: not-allowed; box-shadow: none; }
-        
-        .status-msg { margin-top: 15px; font-weight: bold; min-height: 24px; font-size: 1.1rem; }
-        .error-msg { color: #e74c3c; }
-        .success-msg { color: #27ae60; }
-        .multi-msg { color: #2980b9; }
-
-        /* --- 九宮格 --- */
-        .main-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            background-color: #333;
-            padding: 12px;
-            border-radius: 15px;
-            width: 100%;
-            max-width: 400px;
-            aspect-ratio: 1 / 1;
-            box-sizing: border-box;
-        }
-
-        .block {
-            background-color: #fff;
-            border: 3px solid transparent;
-            position: relative;
-            border-radius: 6px;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            aspect-ratio: 1 / 1; 
-        }
-
-        .block-image { width: 100%; height: 100%; object-fit: contain; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .block-info {
-            position: absolute; bottom: 2px; right: 2px;
-            background: rgba(0,0,0,0.6); color: white;
-            padding: 1px 4px; border-radius: 3px;
-            font-size: 0.7rem; pointer-events: none;
-        }
-        .empty-slot { background-color: #e0e0e0; color: #bbb; font-size: 1.5rem; }
-
-    </style>
-</head>
-<body>
-
-    <h1>🔮 色獨封印法典</h1>
-    
-    <div class="controls">
-        
-        <div class="step-title">步驟 1：選擇魔石組合 (Tiles) 💎</div>
-        
-        <div class="level-selector" id="tile-level-buttons">
-            <button class="level-btn" onclick="filterTilesByLevel(1)">Level I</button>
-            <button class="level-btn" onclick="filterTilesByLevel(2)">II</button>
-            <button class="level-btn" onclick="filterTilesByLevel(3)">III</button>
-            <button class="level-btn" onclick="filterTilesByLevel(4)">IV</button>
-            <button class="level-btn" onclick="filterTilesByLevel(5)">V</button>
-            <button class="level-btn" onclick="filterTilesByLevel(6)">VI</button>
-        </div>
-
-        <div class="grid-selector" id="tile-buttons"></div>
-
-        <div class="step-title">步驟 2：選擇封印法陣 (Shapes) 🔯</div>
-        
-        <div class="level-selector" id="shape-level-buttons">
-            <button class="level-btn" onclick="filterShapesByLevel(1)">Level I</button>
-            <button class="level-btn" onclick="filterShapesByLevel(2)">II</button>
-            <button class="level-btn" onclick="filterShapesByLevel(3)">III</button>
-            <button class="level-btn" onclick="filterShapesByLevel(4)">IV</button>
-            <button class="level-btn" onclick="filterShapesByLevel(5)">V</button>
-            <button class="level-btn" onclick="filterShapesByLevel(6)">VI</button>
-        </div>
-
-        <div class="grid-selector" id="shape-buttons"></div>
-
-        <div class="step-title">步驟 3：詠唱咒語 🪄</div>
-        <div id="status-text" class="status-msg">請完成設定...</div>
-        <button id="btn-solve" class="solve-btn" onclick="startSolving()">✨ 開始封印 ✨</button>
-    </div>
-
-    <div id="grid-container" class="main-grid"></div>
-
-    <script>
-        // --- 1. 資料庫：基本方塊定義 ---
-        const BLOCKS = {
-            1: { B: [[1,2],[3,4]], W: [[4,3],[6,5]] },
-            2: { B: [[3,4],[5,6]], W: [[6,5],[2,1]] },
-            3: { B: [[5,6],[1,2]], W: [[2,1],[4,3]] },
-            4: { B: [[2,3],[5,6]], W: [[5,4],[2,1]] },
-            5: { B: [[4,5],[1,2]], W: [[1,6],[4,3]] },
-            6: { B: [[6,1],[3,4]], W: [[3,2],[6,5]] },
-            7: { B: [[4,5],[6,1]], W: [[1,6],[3,2]] },
-            8: { B: [[6,1],[2,3]], W: [[3,2],[5,4]] },
-            9: { B: [[2,3],[4,5]], W: [[5,4],[1,6]] }
-        };
-
-        // --- 資料庫：魔石組合 (Target Tiles) ---
-        const TARGET_TILES = [
-            // Level I
-            { id: 1,  level: 1, blocks: [{id:1, f:'B'}, {id:5, f:'B'}, {id:8, f:'W'}] },
-            { id: 2,  level: 1, blocks: [{id:2, f:'B'}, {id:9, f:'B'}, {id:6, f:'W'}] },
-            { id: 3,  level: 1, blocks: [{id:6, f:'B'}, {id:1, f:'W'}, {id:7, f:'B'}] },
-            { id: 4,  level: 1, blocks: [{id:9, f:'W'}, {id:3, f:'B'}, {id:4, f:'W'}] },
-            { id: 5,  level: 1, blocks: [{id:2, f:'W'}, {id:7, f:'W'}, {id:4, f:'B'}] },
-            { id: 6,  level: 1, blocks: [{id:5, f:'W'}, {id:3, f:'W'}, {id:8, f:'B'}] },
-            // Level II
-            { id: 7,  level: 2, blocks: [{id:5, f:'B'}, {id:3, f:'B'}, {id:9, f:'W'}] },
-            { id: 8,  level: 2, blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:8, f:'B'}] },
-            { id: 9,  level: 2, blocks: [{id:4, f:'B'}, {id:8, f:'B'}, {id:2, f:'W'}] },
-            { id: 10, level: 2, blocks: [{id:3, f:'B'}, {id:6, f:'W'}, {id:7, f:'W'}] },
-            { id: 11, level: 2, blocks: [{id:9, f:'W'}, {id:6, f:'B'}, {id:1, f:'W'}] },
-            { id: 12, level: 2, blocks: [{id:4, f:'W'}, {id:2, f:'W'}, {id:7, f:'B'}] },
-            // Level III
-            { id: 13, level: 3, blocks: [{id:3, f:'B'}, {id:4, f:'B'}, {id:7, f:'W'}] },
-            { id: 14, level: 3, blocks: [{id:9, f:'B'}, {id:4, f:'W'}, {id:1, f:'B'}] },
-            { id: 15, level: 3, blocks: [{id:7, f:'B'}, {id:5, f:'B'}, {id:2, f:'W'}] },
-            { id: 16, level: 3, blocks: [{id:6, f:'W'}, {id:8, f:'W'}, {id:2, f:'B'}] },
-            { id: 17, level: 3, blocks: [{id:5, f:'B'}, {id:8, f:'W'}, {id:3, f:'W'}] },
-            { id: 18, level: 3, blocks: [{id:1, f:'W'}, {id:9, f:'B'}, {id:6, f:'W'}] },
-            // Level IV
-            { id: 19, level: 4, blocks: [{id:2, f:'B'}, {id:6, f:'B'}, {id:9, f:'W'}] },
-            { id: 20, level: 4, blocks: [{id:7, f:'B'}, {id:4, f:'W'}, {id:3, f:'B'}] },
-            { id: 21, level: 4, blocks: [{id:9, f:'B'}, {id:4, f:'B'}, {id:1, f:'W'}] },
-            { id: 22, level: 4, blocks: [{id:1, f:'B'}, {id:8, f:'W'}, {id:4, f:'W'}] },
-            { id: 23, level: 4, blocks: [{id:9, f:'W'}, {id:5, f:'B'}, {id:2, f:'W'}] },
-            { id: 24, level: 4, blocks: [{id:8, f:'B'}, {id:6, f:'W'}, {id:2, f:'W'}] },
-            // Level V
-            { id: 25, level: 5, blocks: [{id:1, f:'B'}, {id:6, f:'B'}, {id:7, f:'W'}] },
-            { id: 26, level: 5, blocks: [{id:3, f:'B'}, {id:8, f:'B'}, {id:6, f:'W'}] },
-            { id: 27, level: 5, blocks: [{id:5, f:'B'}, {id:9, f:'B'}, {id:3, f:'W'}] },
-            { id: 28, level: 5, blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:7, f:'W'}] },
-            { id: 29, level: 5, blocks: [{id:8, f:'W'}, {id:4, f:'B'}, {id:1, f:'W'}] },
-            { id: 30, level: 5, blocks: [{id:3, f:'W'}, {id:4, f:'W'}, {id:9, f:'B'}] },
-            // Level VI
-            { id: 31, level: 6, blocks: [{id:4, f:'B'}, {id:2, f:'B'}, {id:8, f:'W'}] },
-            { id: 32, level: 6, blocks: [{id:2, f:'B'}, {id:5, f:'W'}, {id:7, f:'B'}] },
-            { id: 33, level: 6, blocks: [{id:8, f:'B'}, {id:6, f:'B'}, {id:3, f:'W'}] },
-            { id: 34, level: 6, blocks: [{id:5, f:'W'}, {id:2, f:'B'}, {id:9, f:'W'}] },
-            { id: 35, level: 6, blocks: [{id:3, f:'W'}, {id:7, f:'W'}, {id:6, f:'B'}] },
-            { id: 36, level: 6, blocks: [{id:7, f:'B'}, {id:5, f:'W'}, {id:1, f:'W'}] }
-        ];
-
-        // --- 資料庫：封印法陣 (Shapes) 更新版 ---
-        const SHAPES = [
-            // Level I
-            { id: 1, name: "No.001", level: 1, active: [2,3,4,7,9], targets: [2,4,9] },
-            { id: 2, name: "No.002", level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
-            { id: 3, name: "No.003", level: 1, active: [1,3,5,8,9], targets: [1,5,9] },
-            { id: 4, name: "No.004", level: 1, active: [1,3,4,8,9], targets: [3,4,8] },
-            { id: 5, name: "No.005", level: 1, active: [1,2,4,6,8], targets: [1,6,8] },
-            { id: 6, name: "No.006", level: 1, active: [1,3,5,7,8], targets: [3,5,7] },
-            // Level II
-            { id: 7, name: "No.007", level: 2, active: [2,4,5,8,9], targets: [2,4,9] },
-            { id: 8, name: "No.008", level: 2, active: [2,6,7,8,9], targets: [2,6,7] },
-            { id: 9, name: "No.009", level: 2, active: [1,2,5,8,9], targets: [1,5,9] },
-            { id: 10, name: "No.010", level: 2, active: [2,3,4,5,8], targets: [3,4,8] },
-            { id: 11, name: "No.011", level: 2, active: [1,2,3,6,8], targets: [1,6,8] },
-            { id: 12, name: "No.012", level: 2, active: [2,3,5,7,8], targets: [3,5,7] },
-            // Level III
-            { id: 13, name: "No.013", level: 3, active: [2,4,6,7,8,9], targets: [2,4,9] },
-            { id: 14, name: "No.014", level: 3, active: [2,4,5,6,7,9], targets: [2,6,7] },
-            { id: 15, name: "No.015", level: 3, active: [1,3,5,7,8,9], targets: [1,5,9] },
-            { id: 16, name: "No.016", level: 3, active: [2,3,4,6,8,9], targets: [3,4,8] },
-            { id: 17, name: "No.017", level: 3, active: [1,2,5,6,7,8], targets: [1,6,8] },
-            { id: 18, name: "No.018", level: 3, active: [1,3,5,6,7,9], targets: [3,5,7] },
-            // Level IV
-            { id: 19, name: "No.019", level: 4, active: [2,4,5,6,8,9], targets: [2,4,9] },
-            { id: 20, name: "No.020", level: 4, active: [2,5,6,7,8,9], targets: [2,6,7] },
-            { id: 21, name: "No.021", level: 4, active: [1,2,3,5,6,9], targets: [1,5,9] },
-            { id: 22, name: "No.022", level: 4, active: [2,3,4,5,6,8], targets: [3,4,8] },
-            { id: 23, name: "No.023", level: 4, active: [1,2,3,5,6,8], targets: [1,6,8] },
-            { id: 24, name: "No.024", level: 4, active: [1,2,3,4,5,7], targets: [3,5,7] },
-            // Level V
-            { id: 25, name: "No.025", level: 5, active: [1,2,4,5,6,8,9], targets: [2,4,9] },
-            { id: 26, name: "No.026", level: 5, active: [1,2,4,6,7,8,9], targets: [2,6,7] },
-            { id: 27, name: "No.027", level: 5, active: [1,3,5,6,7,8,9], targets: [1,5,9] },
-            { id: 28, name: "No.028", level: 5, active: [2,3,4,5,6,7,8], targets: [3,4,8] },
-            { id: 29, name: "No.029", level: 5, active: [1,2,3,4,6,8,9], targets: [1,6,8] },
-            { id: 30, name: "No.030", level: 5, active: [1,3,4,5,7,8,9], targets: [3,5,7] },
-            // Level VI
-            { id: 31, name: "No.031", level: 6, active: [1,2,3,4,6,7,9], targets: [2,4,9] },
-            { id: 32, name: "No.032", level: 6, active: [2,4,5,6,7,8,9], targets: [2,6,7] },
-            { id: 33, name: "No.033", level: 6, active: [1,3,4,5,6,7,9], targets: [1,5,9] },
-            { id: 34, name: "No.034", level: 6, active: [1,2,3,4,7,8,9], targets: [3,4,8] },
-            { id: 35, name: "No.035", level: 6, active: [1,2,4,5,6,7,8], targets: [1,6,8] },
-            { id: 36, name: "No.036", level: 6, active: [1,2,3,5,7,8,9], targets: [3,5,7] }
-        ];
-
-        // 全域變數
-        let currentTileID = 1;  
-        let currentShapeID = 1; 
-        
-        let currentLayoutConfig = {}; 
-        let reservedIDs = new Set();
-        let allSolutions = [];      
-        let currentSolIndex = 0;    
-        let lastParamsHash = "";    
-
-        // --- 初始化 ---
-        function init() {
-            // 預設載入 Level 1
-            filterTilesByLevel(1);
-            filterShapesByLevel(1);
-            
-            // 預設選中
-            selectTile(1);
-            selectShape(1);
-        }
-
-        // --- 核心邏輯：過濾器 ---
-        
-        function filterTilesByLevel(level) {
-            updateLevelBtns('tile-level-buttons', level);
-            
-            const btnContainer = document.getElementById('tile-buttons');
-            btnContainer.innerHTML = '';
-
-            const levelTiles = TARGET_TILES.filter(t => t.level === level);
-            
-            levelTiles.forEach((tile) => {
-                const btn = document.createElement('div');
-                btn.className = 'img-btn';
-                if(tile.id === currentTileID) btn.classList.add('active');
-
-                btn.onclick = () => selectTile(tile.id);
-                
-                const paddedID = String(tile.id).padStart(3, '0');
-                const imgPath = `images/tile_${paddedID}.png`;
-                const label = `No.${paddedID}`;
-                
-                btn.innerHTML = `
-                    <img src="${imgPath}" alt="${label}" onerror="this.style.display='none';this.parentElement.innerText='${label}'">
-                    <div class="btn-label">${label}</div>
-                `;
-                btnContainer.appendChild(btn);
-            });
-            
-            if (levelTiles.length > 0 && !levelTiles.some(t => t.id === currentTileID)) {
-                selectTile(levelTiles[0].id);
-            }
-        }
-
-        function filterShapesByLevel(level) {
-            updateLevelBtns('shape-level-buttons', level);
-
-            const btnContainer = document.getElementById('shape-buttons');
-            btnContainer.innerHTML = ''; 
-
-            const levelShapes = SHAPES.filter(s => s.level === level);
-            
-            levelShapes.forEach((shape) => {
-                const btn = document.createElement('div');
-                btn.className = 'img-btn';
-                if(shape.id === currentShapeID) btn.classList.add('active');
-
-                btn.onclick = () => selectShape(shape.id);
-                
-                const paddedID = String(shape.id).padStart(3, '0');
-                const imgPath = `images/shape_${paddedID}.png`;
-                
-                btn.innerHTML = `
-                    <img src="${imgPath}" alt="${shape.name}" onerror="this.style.display='none';this.parentElement.innerText='${shape.name}'">
-                    <div class="btn-label">${shape.name}</div>
-                `;
-                btnContainer.appendChild(btn);
-            });
-            
-            if (levelShapes.length > 0 && !levelShapes.some(s => s.id === currentShapeID)) {
-                selectShape(levelShapes[0].id);
-            }
-        }
-
-        function updateLevelBtns(containerId, activeLevel) {
-            const btns = document.getElementById(containerId).querySelectorAll('.level-btn');
-            btns.forEach((btn, idx) => {
-                if (idx + 1 === activeLevel) btn.classList.add('active');
-                else btn.classList.remove('active');
-            });
-        }
-
-        function selectTile(id) {
-            currentTileID = id;
-            updateActiveState('tile-buttons', id);
-            resetSolverState();
-            updatePreview();
-        }
-
-        function selectShape(id) {
-            currentShapeID = id;
-            updateActiveState('shape-buttons', id);
-            resetSolverState();
-            updatePreview();
-        }
-
-        function updateActiveState(containerId, activeId) {
-            const container = document.getElementById(containerId);
-            container.querySelectorAll('.img-btn').forEach(b => b.classList.remove('active'));
-            
-            const paddedId = String(activeId).padStart(3, '0');
-            const targetText = `No.${paddedId}`;
-            const targetName = SHAPES.find(s=>s.id===activeId)?.name || `No.${paddedId}`;
-
-            container.querySelectorAll('.img-btn').forEach(btn => {
-                if(btn.innerText.includes(targetText) || btn.innerText.includes(targetName)) {
-                    btn.classList.add('active');
-                }
-            });
-        }
-        
-        function resetSolverState() {
-            allSolutions = [];
-            currentSolIndex = 0;
-            renderEmptyGrid();
-            document.getElementById('btn-solve').innerText = "✨ 開始封印 ✨";
-            document.getElementById('status-text').innerHTML = "準備就緒";
-        }
-
-        function updatePreview() {
-            const shape = SHAPES.find(s => s.id === currentShapeID);
-            const tile = TARGET_TILES.find(t => t.id === currentTileID);
-            
-            if(!shape || !tile) return;
-
-            currentLayoutConfig = {};
-            for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
-            shape.active.forEach(pos => { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; });
-            
-            shape.targets.forEach((pos, idx) => {
-                if (idx < tile.blocks.length) {
-                    const blockDef = tile.blocks[idx];
-                    currentLayoutConfig[pos-1] = { 
-                        type: 'FIXED', 
-                        id: blockDef.id, 
-                        face: blockDef.f 
-                    };
-                } else {
-                    currentLayoutConfig[pos-1] = { type: 'SOLVE' };
-                }
-            });
-            
-            renderGrid(null, true);
-        }
-
-        // --- 解題核心 ---
-        function getRotatedMatrix(matrix, times) {
-            let m = JSON.parse(JSON.stringify(matrix));
-            for (let t = 0; t < times; t++) {
-                const newM = [[0,0],[0,0]];
-                newM[0][1] = m[0][0]; newM[1][1] = m[0][1];
-                newM[1][0] = m[1][1]; newM[0][0] = m[1][0];
-                m = newM;
-            }
-            return m;
-        }
-
-        function isValid(boardState) {
-            let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
-            for(let i=0; i<9; i++) {
-                if(!boardState[i]) continue;
-                let b = boardState[i];
-                let baseRow = Math.floor(i / 3) * 2;
-                let baseCol = (i % 3) * 2;
-                let matrix = getRotatedMatrix(BLOCKS[b.id][b.face], b.rot);
-                fullGrid[baseRow][baseCol] = matrix[0][0]; fullGrid[baseRow][baseCol+1] = matrix[0][1];
-                fullGrid[baseRow+1][baseCol] = matrix[1][0]; fullGrid[baseRow+1][baseCol+1] = matrix[1][1];
-            }
-            for (let i = 0; i < 6; i++) {
-                let rowSeen = new Set(), colSeen = new Set();
-                for (let j = 0; j < 6; j++) {
-                    let rVal = fullGrid[i][j];
-                    if (rVal !== 0) { if (rowSeen.has(rVal)) return false; rowSeen.add(rVal); }
-                    let cVal = fullGrid[j][i];
-                    if (cVal !== 0) { if (colSeen.has(cVal)) return false; colSeen.add(cVal); }
-                }
-            }
-            return true;
-        }
-
-        function solveAll(board, usedIDs) {
-            if (allSolutions.length >= 72) return true;
-
-            let slot = -1;
-            for(let i=0; i<9; i++) {
-                if (!currentLayoutConfig[i]) continue;
-                const type = currentLayoutConfig[i].type;
-                if(board[i] === null && (type === 'SOLVE' || type === 'FIXED')) {
-                    slot = i; break;
-                }
-            }
-
-            if (slot === -1) {
-                allSolutions.push(JSON.parse(JSON.stringify(board)));
-                return false; 
-            }
-
-            const config = currentLayoutConfig[slot];
-            let candidates = [];
-
-            if (config.type === 'FIXED') {
-                candidates.push({ id: config.id, face: config.face, isFixed: true });
-            } else {
-                for (let id = 1; id <= 9; id++) {
-                    if (!usedIDs.has(id) && !reservedIDs.has(id)) {
-                        candidates.push({ id: id, face: 'B', isFixed: false });
-                        candidates.push({ id: id, face: 'W', isFixed: false });
-                    }
-                }
-            }
-
-            for (let cand of candidates) {
-                for (let rot = 0; rot < 4; rot++) {
-                    board[slot] = { id: cand.id, face: cand.face, rot: rot, isFixed: cand.isFixed };
-                    
-                    if (isValid(board)) {
-                        usedIDs.add(cand.id);
-                        if (solveAll(board, usedIDs)) return true; 
-                        usedIDs.delete(cand.id);
-                    }
-                    board[slot] = null;
-                }
-            }
-            return false;
-        }
-
-        // --- 執行與渲染 ---
-        function startSolving() {
-            const currentParamsHash = `${currentTileID}-${currentShapeID}`;
-
-            if (currentParamsHash !== lastParamsHash || allSolutions.length === 0) {
-                document.getElementById('status-text').innerHTML = "🔮 正在詠唱咒語...";
-                
-                let board = Array(9).fill(null);
-                let used = new Set();
-                reservedIDs.clear();
-                allSolutions = []; 
-
-                if (Object.keys(currentLayoutConfig).length === 0) {
-                     alert("請先選擇圖形與魔石！");
-                     return;
-                }
-
-                for(let i=0; i<9; i++) {
-                    const config = currentLayoutConfig[i];
-                    if(config && config.type === 'FIXED') {
-                        reservedIDs.add(config.id);
-                    }
-                }
-
-                setTimeout(() => {
-                    solveAll(board, used); 
-
-                    if (allSolutions.length > 0) {
-                        currentSolIndex = 0;
-                        lastParamsHash = currentParamsHash; 
-                        updateStatusAndRender();
-                    } else {
-                        document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 封印失敗 (魔力衝突)</span>";
-                        document.getElementById('btn-solve').innerText = "✨ 開始封印 ✨";
-                    }
-                }, 50);
-
-            } else {
-                currentSolIndex++;
-                if (currentSolIndex >= allSolutions.length) {
-                    currentSolIndex = 0; 
-                }
-                updateStatusAndRender();
-            }
-        }
-
-        function updateStatusAndRender() {
-            const total = allSolutions.length;
-            const current = currentSolIndex + 1;
-            const btn = document.getElementById('btn-solve');
-            const status = document.getElementById('status-text');
-
-            renderGrid(allSolutions[currentSolIndex], false);
-
-            if (total === 1) {
-                status.innerHTML = "<span class='success-msg'>✅ 封印成功 (唯一解)</span>";
-                btn.innerText = "✨ 唯一解 ✨";
-            } else {
-                let countText = total >= 72 ? "72+" : total;
-                status.innerHTML = `<span class='multi-msg'>✅ 封印成功 (第 ${current} / ${countText} 種解法)</span>`;
-                btn.innerText = "➡️ 換一種解法";
-            }
-        }
-
-        function renderEmptyGrid() {
-            renderGrid(null, true);
-        }
-
-        function renderGrid(boardData, isPreview) {
-            const container = document.getElementById('grid-container');
-            container.innerHTML = '';
-
-            for(let i=0; i<9; i++) {
-                const config = currentLayoutConfig[i];
-                let block = boardData ? boardData[i] : null;
-                const div = document.createElement('div');
-                div.className = 'block';
-
-                if (isPreview && config && config.type === 'FIXED') {
-                    block = { id: config.id, face: config.face, rot: 0, isFixed: true };
-                }
-
-                if (config && config.type === 'EMPTY') {
-                    div.classList.add('empty-slot');
-                } 
-                else if (block) {
-                    div.style.borderColor = block.isFixed ? '#e74c3c' : '#555';
-                    const imagePath = `images/block_${block.id}_${block.face}.png`;
-                    const rot = block.rot * 90;
-                    div.innerHTML = `
-                        <img src="${imagePath}" class="block-image" style="transform: rotate(${rot}deg);"
-                             onerror="this.style.display='none'; this.parentNode.innerText='${block.face}${block.id}';">
-                        <div class="block-info">${block.face}${block.id}</div>
-                    `;
-                }
-                else if (config && config.type === 'SOLVE') {
-                    div.innerHTML = '<span style="color:#ccc; font-size:2rem;">?</span>';
-                }
-                container.appendChild(div);
-            }
-        }
-
-        init();
-    </script>
-</body>
-
 </html>
 
