@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>色獨封印法典 (智能光暈版)</title>
+    <title>色獨封印法典 (清晰光暈版)</title>
     <style>
         /* --- 1. 基礎設定 --- */
         body {
@@ -148,7 +148,7 @@
             z-index: 12; border-radius: 50%; 
         }
 
-        /* 光暈特效層 (3x3 模式) */
+        /* --- 光暈特效層 (修正版：清晰不模糊) --- */
         .glow-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; 
@@ -159,16 +159,19 @@
         
         .glow-bar {
             position: absolute;
-            background: rgba(255, 255, 255, 0.4); 
-            box-shadow: 0 0 20px 8px rgba(255, 255, 255, 0.6);
-            border-radius: 8px;
+            /* 關鍵修改：背景全透明，不再遮擋方塊 */
+            background: transparent; 
+            /* 關鍵修改：使用強烈的外部陰影和細微邊框來製造光暈感 */
+            box-shadow: 0 0 15px 8px rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
             transition: opacity 0.3s;
         }
         
-        /* 橫向光暈 (對應 Block Row) */
-        .glow-row { left: 1%; width: 98%; height: 31%; }
-        /* 縱向光暈 (對應 Block Col) */
-        .glow-col { top: 1%; height: 98%; width: 31%; }
+        /* 橫向光暈 */
+        .glow-row { left: 0.5%; width: 99%; height: 32%; }
+        /* 縱向光暈 */
+        .glow-col { top: 0.5%; height: 99%; width: 32%; }
 
         /* --- 5. 狀態與按鈕 --- */
         .status-msg { margin: 15px 0; font-weight: bold; font-size: 1.1rem; min-height: 24px; color: #333; }
@@ -607,9 +610,9 @@
                 const val = isRow ? grid[idx][k] : grid[k][idx];
                 if (val !== 0) values.push(val);
             }
-            if (values.length === 0) return false; // Empty line
+            if (values.length === 0) return false; 
             const unique = new Set(values);
-            return unique.size === values.length; // True if no duplicates (ignoring zeros)
+            return unique.size === values.length; 
         }
 
         function updateGlowsAndWin() {
@@ -617,26 +620,24 @@
             glowLayer.innerHTML = '';
             const grid = getFullGrid();
             
-            // 橫向光暈 (Block Row)
+            // 橫向光暈 (3x3 Block Row)
             for (let r = 0; r < 3; r++) {
                 let blockCount = 0;
                 if (userBoard[r*3]) blockCount++;
                 if (userBoard[r*3+1]) blockCount++;
                 if (userBoard[r*3+2]) blockCount++;
 
-                // 條件：方塊數 > 1 且 內部兩行數字無衝突
                 if (blockCount > 1) {
                     if (isLineValid(grid, r*2, true) && isLineValid(grid, r*2+1, true)) {
                         const glow = document.createElement('div');
                         glow.className = 'glow-bar glow-row';
-                        // 計算位置: 0%, 33.3%, 66.6%
-                        glow.style.top = (r * 33.33 + 1) + '%'; 
+                        glow.style.top = (r * 33.33 + 0.5) + '%'; // 微調位置
                         glowLayer.appendChild(glow);
                     }
                 }
             }
 
-            // 縱向光暈 (Block Col)
+            // 縱向光暈 (3x3 Block Col)
             for (let c = 0; c < 3; c++) {
                 let blockCount = 0;
                 if (userBoard[c]) blockCount++;
@@ -647,7 +648,7 @@
                     if (isLineValid(grid, c*2, false) && isLineValid(grid, c*2+1, false)) {
                         const glow = document.createElement('div');
                         glow.className = 'glow-bar glow-col';
-                        glow.style.left = (c * 33.33 + 1) + '%';
+                        glow.style.left = (c * 33.33 + 0.5) + '%'; // 微調位置
                         glowLayer.appendChild(glow);
                     }
                 }
