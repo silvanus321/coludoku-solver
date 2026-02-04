@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>色獨封印法典 (競速版)</title>
+    <title>色獨封印法典 (傳說版)</title>
     <style>
         /* --- 1. 基礎設定 --- */
         body {
@@ -21,9 +21,18 @@
             min-height: 100vh;
         }
 
-        h1 { margin: 10px 0; letter-spacing: 2px; font-size: 1.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        /* 標題 */
+        .header-box {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            margin: 10px 0;
+        }
 
-        /* --- 2. HUD --- */
+        h1 { margin: 0; letter-spacing: 2px; font-size: 1.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3); display: inline-block; }
+
+        /* --- 2. HUD (狀態列) --- */
         .hud {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -32,7 +41,7 @@
             background: rgba(255, 255, 255, 0.1);
             padding: 10px 15px;
             border-radius: 50px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             box-sizing: border-box;
             backdrop-filter: blur(5px);
             border: 1px solid rgba(255,255,255,0.2);
@@ -53,6 +62,17 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+        }
+
+        /* 簡潔的操作說明 (新增) */
+        .instruction-bar {
+            font-size: 0.85rem;
+            color: #bdc3c7;
+            background: rgba(0,0,0,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+            white-space: nowrap;
         }
 
         .main-grid {
@@ -147,7 +167,7 @@
         .action-btn.give-up:hover { background-color: #95a5a6; }
         .action-btn.failed { background-color: #c0392b; cursor: not-allowed; }
         
-        .level-info { margin-top: 5px; font-size: 0.9rem; color: #bdc3c7; min-height: 20px; }
+        .level-info { margin-top: 5px; font-size: 0.9rem; color: #f1c40f; min-height: 20px; font-weight: bold;}
 
         /* --- 5. 輸入框 --- */
         .name-input {
@@ -183,7 +203,6 @@
         .lb-name { font-weight: bold; }
         .lb-score { color: #e67e22; text-align: right; }
         .lb-time { color: #7f8c8d; text-align: right; font-family: monospace; }
-        
         .best-levels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
         .bl-item { background: #f9f9f9; padding: 5px; border-radius: 5px; font-size: 0.8rem; border: 1px solid #eee; }
         .bl-lvl { font-weight: bold; color: #3498db; }
@@ -206,16 +225,17 @@
         <div class="intro-box">
             <div class="intro-title">🔮 色獨封印</div>
             <div class="intro-desc">
-                輸入你的封印師大名<br>
                 挑戰 6 個等級的魔法陣<br>
                 <strong>滿分 100 分 (含速通獎勵)</strong>
             </div>
-            <input type="text" id="player-name" class="name-input" placeholder="請輸入名字" maxlength="10">
+            <input type="text" id="player-name" class="name-input" placeholder="請輸入封印師名字" maxlength="10">
             <button class="action-btn" onclick="startGame()">開始挑戰</button>
         </div>
     </div>
 
-    <h1 id="game-title">Round 1</h1>
+    <div class="header-box">
+        <h1 id="game-title">Round 1</h1>
+    </div>
     
     <div class="hud">
         <div class="hud-item">關卡 <span id="round-disp" class="hud-val">1/6</span></div>
@@ -226,6 +246,10 @@
     <div class="game-container">
         <div class="level-info" id="level-info">Level I (5分 + 速通5分)</div>
         
+        <div class="instruction-bar">
+            👆點擊放入/翻面 | 🔄點邊緣旋轉 | 🗑️長按移除
+        </div>
+
         <div id="grid-container" class="main-grid"></div>
         
         <button id="btn-next" class="action-btn" style="display:none;" onclick="nextLevel()">下一關 ➡️</button>
@@ -293,7 +317,7 @@
                 osc.start(now); osc.stop(now + 0.5);
             } else if (type === 'win') {
                 playNote(523.25, now, 0.1); playNote(659.25, now + 0.1, 0.1); playNote(783.99, now + 0.2, 0.4); 
-            } else if (type === 'bonus') { // 速通音效
+            } else if (type === 'bonus') {
                 playNote(880, now, 0.1); playNote(1760, now + 0.1, 0.2); 
             }
         }
@@ -305,7 +329,7 @@
             osc.start(time); osc.stop(time + dur);
         }
 
-        // --- 1. 設定與資料庫 ---
+        // --- 1. 資料庫 ---
         const BLOCKS = {
             1: { B: [[1,2],[3,4]], W: [[4,3],[6,5]] },
             2: { B: [[3,4],[5,6]], W: [[6,5],[2,1]] },
@@ -393,8 +417,6 @@
             { id: 35, name: "No.035", level: 6, active: [1,2,4,5,6,7,8], targets: [1,6,8] },
             { id: 36, name: "No.036", level: 6, active: [1,2,3,5,7,8,9], targets: [3,5,7] }
         ];
-
-        // --- 全新等級配置：時間、基礎分、獎勵分 ---
         const LEVEL_CONFIG = {
             1: { time: 120, base: 5, bonus: 5 },
             2: { time: 240, base: 5, bonus: 5 },
@@ -418,6 +440,7 @@
         let timerInterval;
         let timeLeft = 0;
         let lastValidLineCount = 0;
+        let longPressTimer;
 
         // --- 核心流程 ---
         function startGame() {
@@ -446,7 +469,6 @@
             document.getElementById('grid-container').classList.remove('win-glow');
             document.getElementById('timer-disp').classList.remove('urgent');
 
-            // 讀取該等級配置
             const config = LEVEL_CONFIG[round];
             startTimer(config.time);
             roundStartTime = Date.now();
@@ -477,7 +499,7 @@
             if (!solvable) { alert("生成失敗"); return; }
 
             document.getElementById('level-info').innerText = `${selectedShape.name} (通關${config.base}分 + 速通${config.bonus}分)`;
-            document.getElementById('level-info').style.color = "#bdc3c7"; 
+            document.getElementById('level-info').style.color = "#f1c40f"; 
             
             userBoard = Array(9).fill(null);
             for(let i=0; i<9; i++) {
@@ -531,7 +553,6 @@
         function calculateTimeSpent() {
             let spent = Math.floor((Date.now() - roundStartTime) / 1000);
             totalTimeSpent += spent;
-            // 更新單關最快 (僅在未作弊且勝利時)
             if (isRoundWon && !isSolverUsed) updateLevelBest(currentRound, spent);
             return spent;
         }
@@ -539,11 +560,9 @@
         function nextLevel() {
             clearInterval(timerInterval);
             const spent = calculateTimeSpent(); 
-
             if (!isSolverUsed) {
                 const config = LEVEL_CONFIG[currentRound];
                 let roundScore = config.base;
-                // 1分鐘(60秒)內完成，加獎勵分
                 if (spent <= 60) roundScore += config.bonus;
                 totalScore += roundScore;
             }
@@ -561,7 +580,7 @@
         // --- 排行榜 ---
         function saveRecord() {
             const record = { name: playerName, score: totalScore, time: totalTimeSpent, date: Date.now() };
-            let lb = JSON.parse(localStorage.getItem('coludoku_lb_v3') || "[]"); // v3 for 100pt system
+            let lb = JSON.parse(localStorage.getItem('coludoku_lb_v3') || "[]");
             lb.push(record);
             lb.sort((a,b) => b.score - a.score || a.time - b.time);
             lb = lb.slice(0, 10);
@@ -650,12 +669,16 @@
                             const centerZone = document.createElement('div');
                             centerZone.className = 'zone-center';
                             centerZone.onclick = (e) => { e.stopPropagation(); flipBlock(i); };
-                            const startLongPress = () => { longPressTimer = setTimeout(() => changeBlock(i), 600); };
+                            
+                            // 長按移除
+                            const startLongPress = () => { longPressTimer = setTimeout(() => clearBlock(i), 600); };
                             const cancelLongPress = () => clearTimeout(longPressTimer);
                             centerZone.addEventListener('mousedown', startLongPress);
                             centerZone.addEventListener('touchstart', startLongPress);
                             centerZone.addEventListener('mouseup', cancelLongPress);
                             centerZone.addEventListener('touchend', cancelLongPress);
+                            centerZone.addEventListener('mouseleave', cancelLongPress);
+
                             div.appendChild(centerZone);
                         }
                     } else {
@@ -681,15 +704,13 @@
                 playSound('action'); renderGameGrid();
             }
         }
-        function changeBlock(index) {
+        function clearBlock(index) {
             if (isRoundWon) return;
-            const currentId = userBoard[index].id;
-            const available = getAvailableBlocks();
-            available.push(currentId); available.sort((a,b)=>a-b);
-            let next = available[(available.indexOf(currentId)+1)%available.length];
-            userBoard[index].id = next;
-            playSound('action'); renderGameGrid();
+            userBoard[index] = null;
+            playSound('action'); 
+            renderGameGrid();
         }
+        
         function getAvailableBlocks() {
             const used = new Set();
             userBoard.forEach(b => { if(b) used.add(b.id); });
@@ -783,10 +804,9 @@
                 isRoundWon = true;
                 clearInterval(timerInterval);
                 playSound('win');
-                // 檢查是否速通
                 const spent = Math.floor((Date.now() - roundStartTime) / 1000);
                 if (spent <= 60) {
-                    setTimeout(() => playSound('bonus'), 800); // 延遲播放速通音效
+                    setTimeout(() => playSound('bonus'), 800);
                     document.getElementById('level-info').innerText += " ⭐ 速通達成！";
                     document.getElementById('level-info').style.color = "#f1c40f";
                 }
