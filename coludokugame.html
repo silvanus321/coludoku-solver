@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>色獨封印師 (挑戰版)</title>
+    <title>色獨封印法典 (競速版)</title>
     <style>
         /* --- 1. 基礎設定 --- */
         body {
@@ -32,7 +32,7 @@
             background: rgba(255, 255, 255, 0.1);
             padding: 10px 15px;
             border-radius: 50px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             box-sizing: border-box;
             backdrop-filter: blur(5px);
             border: 1px solid rgba(255,255,255,0.2);
@@ -147,18 +147,12 @@
         .action-btn.give-up:hover { background-color: #95a5a6; }
         .action-btn.failed { background-color: #c0392b; cursor: not-allowed; }
         
-        .level-info { margin-top: 10px; font-size: 0.9rem; color: #bdc3c7; }
+        .level-info { margin-top: 5px; font-size: 0.9rem; color: #bdc3c7; min-height: 20px; }
 
         /* --- 5. 輸入框 --- */
         .name-input {
-            padding: 15px;
-            border-radius: 10px;
-            border: none;
-            font-size: 1.2rem;
-            width: 70%;
-            text-align: center;
-            margin-bottom: 20px;
-            background: rgba(255,255,255,0.9);
+            padding: 15px; border-radius: 10px; border: none; font-size: 1.2rem;
+            width: 70%; text-align: center; margin-bottom: 20px; background: rgba(255,255,255,0.9);
         }
 
         /* --- 6. 彈窗與排行榜 --- */
@@ -167,20 +161,19 @@
             background: rgba(0,0,0,0.9); z-index: 999;
             display: none; justify-content: center; align-items: center;
             backdrop-filter: blur(4px);
-            overflow-y: auto; /* 允許長排行榜滾動 */
+            overflow-y: auto; 
         }
         .modal-content {
             background: white; color: #333; padding: 25px; border-radius: 15px; 
             width: 90%; max-width: 400px; text-align: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            max-height: 90vh;
-            overflow-y: auto;
+            max-height: 95vh; overflow-y: auto;
         }
         .picker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
         .picker-item { border: 1px solid #ddd; border-radius: 8px; padding: 5px; cursor: pointer; }
         .picker-item img { width: 100%; }
 
-        /* 排行榜樣式 */
+        /* 排行榜 */
         .leaderboard-box { margin-top: 20px; text-align: left; }
         .lb-title { font-size: 1rem; color: #555; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; }
         .lb-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
@@ -211,10 +204,11 @@
 
     <div id="start-screen">
         <div class="intro-box">
-            <div class="intro-title">🔮 色獨封印師</div>
+            <div class="intro-title">🔮 色獨封印</div>
             <div class="intro-desc">
                 輸入你的封印師大名<br>
-                挑戰 6 個等級的魔法陣
+                挑戰 6 個等級的魔法陣<br>
+                <strong>滿分 100 分 (含速通獎勵)</strong>
             </div>
             <input type="text" id="player-name" class="name-input" placeholder="請輸入名字" maxlength="10">
             <button class="action-btn" onclick="startGame()">開始挑戰</button>
@@ -230,7 +224,7 @@
     </div>
 
     <div class="game-container">
-        <div class="level-info" id="level-info">Level I (2分)</div>
+        <div class="level-info" id="level-info">Level I (5分 + 速通5分)</div>
         
         <div id="grid-container" class="main-grid"></div>
         
@@ -253,14 +247,14 @@
             <div style="background:#f4f6f7; padding:10px; border-radius:10px; margin-bottom:15px;">
                 <div style="font-size:1.1rem; color:#2c3e50; font-weight:bold;" id="end-player-name"></div>
                 <div style="display:flex; justify-content:space-around; margin-top:5px;">
-                    <div>得分 <span id="end-score" style="color:#27ae60; font-weight:bold;">0</span></div>
+                    <div>得分 <span id="end-score" style="color:#27ae60; font-weight:bold;">0 / 100</span></div>
                     <div>總耗時 <span id="end-time" style="color:#e67e22; font-weight:bold;">00:00</span></div>
                 </div>
                 <div id="end-msg" style="margin-top:5px; font-size:0.9rem; color:#555;"></div>
             </div>
 
             <div class="leaderboard-box">
-                <div class="lb-title">🏆 封印師排行榜</div>
+                <div class="lb-title">🏆 封印師排行榜 (TOP 10)</div>
                 <table class="lb-table">
                     <thead><tr><th>#</th><th>名字</th><th>分</th><th>時</th></tr></thead>
                     <tbody id="lb-body"></tbody>
@@ -288,38 +282,30 @@
             const now = audioCtx.currentTime;
 
             if (type === 'action') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, now);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
                 osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
-                gainNode.gain.setValueAtTime(0.1, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                gainNode.gain.setValueAtTime(0.1, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
                 osc.start(now); osc.stop(now + 0.1);
             } else if (type === 'line') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(1200, now);
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(1200, now);
                 osc.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
-                gainNode.gain.setValueAtTime(0.1, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                gainNode.gain.setValueAtTime(0.1, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
                 osc.start(now); osc.stop(now + 0.5);
             } else if (type === 'win') {
-                playNote(523.25, now, 0.1); 
-                playNote(659.25, now + 0.1, 0.1); 
-                playNote(783.99, now + 0.2, 0.4); 
+                playNote(523.25, now, 0.1); playNote(659.25, now + 0.1, 0.1); playNote(783.99, now + 0.2, 0.4); 
+            } else if (type === 'bonus') { // 速通音效
+                playNote(880, now, 0.1); playNote(1760, now + 0.1, 0.2); 
             }
         }
         function playNote(freq, time, dur) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.type = 'square';
-            osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.1, time);
-            gain.gain.exponentialRampToValueAtTime(0.01, time + dur);
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'square'; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.1, time); gain.gain.exponentialRampToValueAtTime(0.01, time + dur);
             osc.start(time); osc.stop(time + dur);
         }
 
-        // --- 1. 資料庫 ---
+        // --- 1. 設定與資料庫 ---
         const BLOCKS = {
             1: { B: [[1,2],[3,4]], W: [[4,3],[6,5]] },
             2: { B: [[3,4],[5,6]], W: [[6,5],[2,1]] },
@@ -370,51 +356,60 @@
             { id: 36, blocks: [{id:7, f:'B'}, {id:5, f:'W'}, {id:1, f:'W'}] }
         ];
         const SHAPES = [
-            { id: 1, name: "No.001", level: 1, active: [2,3,4,7,9], targets: [2,4,9], score: 2 },
-            { id: 2, name: "No.002", level: 1, active: [2,4,6,7,8], targets: [2,6,7], score: 2 },
-            { id: 3, name: "No.003", level: 1, active: [1,3,5,8,9], targets: [1,5,9], score: 2 },
-            { id: 4, name: "No.004", level: 1, active: [1,3,4,8,9], targets: [3,4,8], score: 2 },
-            { id: 5, name: "No.005", level: 1, active: [1,2,4,6,8], targets: [1,6,8], score: 2 },
-            { id: 6, name: "No.006", level: 1, active: [1,3,5,7,8], targets: [3,5,7], score: 2 },
-            { id: 7, name: "No.007", level: 2, active: [2,4,5,8,9], targets: [2,4,9], score: 2 },
-            { id: 8, name: "No.008", level: 2, active: [2,6,7,8,9], targets: [2,6,7], score: 2 },
-            { id: 9, name: "No.009", level: 2, active: [1,2,5,8,9], targets: [1,5,9], score: 2 },
-            { id: 10, name: "No.010", level: 2, active: [2,3,4,5,8], targets: [3,4,8], score: 2 },
-            { id: 11, name: "No.011", level: 2, active: [1,2,3,6,8], targets: [1,6,8], score: 2 },
-            { id: 12, name: "No.012", level: 2, active: [2,3,5,7,8], targets: [3,5,7], score: 2 },
-            { id: 13, name: "No.013", level: 3, active: [2,4,6,7,8,9], targets: [2,4,9], score: 3 },
-            { id: 14, name: "No.014", level: 3, active: [2,4,5,6,7,9], targets: [2,6,7], score: 3 },
-            { id: 15, name: "No.015", level: 3, active: [1,3,5,7,8,9], targets: [1,5,9], score: 3 },
-            { id: 16, name: "No.016", level: 3, active: [2,3,4,6,8,9], targets: [3,4,8], score: 3 },
-            { id: 17, name: "No.017", level: 3, active: [1,2,5,6,7,8], targets: [1,6,8], score: 3 },
-            { id: 18, name: "No.018", level: 3, active: [1,3,5,6,7,9], targets: [3,5,7], score: 3 },
-            { id: 19, name: "No.019", level: 4, active: [2,4,5,6,8,9], targets: [2,4,9], score: 3 },
-            { id: 20, name: "No.020", level: 4, active: [2,5,6,7,8,9], targets: [2,6,7], score: 3 },
-            { id: 21, name: "No.021", level: 4, active: [1,2,3,5,6,9], targets: [1,5,9], score: 3 },
-            { id: 22, name: "No.022", level: 4, active: [2,3,4,5,6,8], targets: [3,4,8], score: 3 },
-            { id: 23, name: "No.023", level: 4, active: [1,2,3,5,6,8], targets: [1,6,8], score: 3 },
-            { id: 24, name: "No.024", level: 4, active: [1,2,3,4,5,7], targets: [3,5,7], score: 3 },
-            { id: 25, name: "No.025", level: 5, active: [1,2,4,5,6,8,9], targets: [2,4,9], score: 4 },
-            { id: 26, name: "No.026", level: 5, active: [1,2,4,6,7,8,9], targets: [2,6,7], score: 4 },
-            { id: 27, name: "No.027", level: 5, active: [1,3,5,6,7,8,9], targets: [1,5,9], score: 4 },
-            { id: 28, name: "No.028", level: 5, active: [2,3,4,5,6,7,8], targets: [3,4,8], score: 4 },
-            { id: 29, name: "No.029", level: 5, active: [1,2,3,4,6,8,9], targets: [1,6,8], score: 4 },
-            { id: 30, name: "No.030", level: 5, active: [1,3,4,5,7,8,9], targets: [3,5,7], score: 4 },
-            { id: 31, name: "No.031", level: 6, active: [1,2,3,4,6,7,9], targets: [2,4,9], score: 4 },
-            { id: 32, name: "No.032", level: 6, active: [2,4,5,6,7,8,9], targets: [2,6,7], score: 4 },
-            { id: 33, name: "No.033", level: 6, active: [1,3,4,5,6,7,9], targets: [1,5,9], score: 4 },
-            { id: 34, name: "No.034", level: 6, active: [1,2,3,4,7,8,9], targets: [3,4,8], score: 4 },
-            { id: 35, name: "No.035", level: 6, active: [1,2,4,5,6,7,8], targets: [1,6,8], score: 4 },
-            { id: 36, name: "No.036", level: 6, active: [1,2,3,5,7,8,9], targets: [3,5,7], score: 4 }
+            { id: 1, name: "No.001", level: 1, active: [2,3,4,7,9], targets: [2,4,9] },
+            { id: 2, name: "No.002", level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
+            { id: 3, name: "No.003", level: 1, active: [1,3,5,8,9], targets: [1,5,9] },
+            { id: 4, name: "No.004", level: 1, active: [1,3,4,8,9], targets: [3,4,8] },
+            { id: 5, name: "No.005", level: 1, active: [1,2,4,6,8], targets: [1,6,8] },
+            { id: 6, name: "No.006", level: 1, active: [1,3,5,7,8], targets: [3,5,7] },
+            { id: 7, name: "No.007", level: 2, active: [2,4,5,8,9], targets: [2,4,9] },
+            { id: 8, name: "No.008", level: 2, active: [2,6,7,8,9], targets: [2,6,7] },
+            { id: 9, name: "No.009", level: 2, active: [1,2,5,8,9], targets: [1,5,9] },
+            { id: 10, name: "No.010", level: 2, active: [2,3,4,5,8], targets: [3,4,8] },
+            { id: 11, name: "No.011", level: 2, active: [1,2,3,6,8], targets: [1,6,8] },
+            { id: 12, name: "No.012", level: 2, active: [2,3,5,7,8], targets: [3,5,7] },
+            { id: 13, name: "No.013", level: 3, active: [2,4,6,7,8,9], targets: [2,4,9] },
+            { id: 14, name: "No.014", level: 3, active: [2,4,5,6,7,9], targets: [2,6,7] },
+            { id: 15, name: "No.015", level: 3, active: [1,3,5,7,8,9], targets: [1,5,9] },
+            { id: 16, name: "No.016", level: 3, active: [2,3,4,6,8,9], targets: [3,4,8] },
+            { id: 17, name: "No.017", level: 3, active: [1,2,5,6,7,8], targets: [1,6,8] },
+            { id: 18, name: "No.018", level: 3, active: [1,3,5,6,7,9], targets: [3,5,7] },
+            { id: 19, name: "No.019", level: 4, active: [2,4,5,6,8,9], targets: [2,4,9] },
+            { id: 20, name: "No.020", level: 4, active: [2,5,6,7,8,9], targets: [2,6,7] },
+            { id: 21, name: "No.021", level: 4, active: [1,2,3,5,6,9], targets: [1,5,9] },
+            { id: 22, name: "No.022", level: 4, active: [2,3,4,5,6,8], targets: [3,4,8] },
+            { id: 23, name: "No.023", level: 4, active: [1,2,3,5,6,8], targets: [1,6,8] },
+            { id: 24, name: "No.024", level: 4, active: [1,2,3,4,5,7], targets: [3,5,7] },
+            { id: 25, name: "No.025", level: 5, active: [1,2,4,5,6,8,9], targets: [2,4,9] },
+            { id: 26, name: "No.026", level: 5, active: [1,2,4,6,7,8,9], targets: [2,6,7] },
+            { id: 27, name: "No.027", level: 5, active: [1,3,5,6,7,8,9], targets: [1,5,9] },
+            { id: 28, name: "No.028", level: 5, active: [2,3,4,5,6,7,8], targets: [3,4,8] },
+            { id: 29, name: "No.029", level: 5, active: [1,2,3,4,6,8,9], targets: [1,6,8] },
+            { id: 30, name: "No.030", level: 5, active: [1,3,4,5,7,8,9], targets: [3,5,7] },
+            { id: 31, name: "No.031", level: 6, active: [1,2,3,4,6,7,9], targets: [2,4,9] },
+            { id: 32, name: "No.032", level: 6, active: [2,4,5,6,7,8,9], targets: [2,6,7] },
+            { id: 33, name: "No.033", level: 6, active: [1,3,4,5,6,7,9], targets: [1,5,9] },
+            { id: 34, name: "No.034", level: 6, active: [1,2,3,4,7,8,9], targets: [3,4,8] },
+            { id: 35, name: "No.035", level: 6, active: [1,2,4,5,6,7,8], targets: [1,6,8] },
+            { id: 36, name: "No.036", level: 6, active: [1,2,3,5,7,8,9], targets: [3,5,7] }
         ];
-        const LEVEL_TIME = { 1: 120, 2: 240, 3: 360, 4: 480, 5: 600, 6: 720 };
+
+        // --- 全新等級配置：時間、基礎分、獎勵分 ---
+        const LEVEL_CONFIG = {
+            1: { time: 120, base: 5, bonus: 5 },
+            2: { time: 240, base: 5, bonus: 5 },
+            3: { time: 360, base: 10, bonus: 5 },
+            4: { time: 480, base: 10, bonus: 5 },
+            5: { time: 600, base: 20, bonus: 5 },
+            6: { time: 720, base: 20, bonus: 5 }
+        };
 
         // --- 變數 ---
         let playerName = "";
         let currentRound = 1;
         let totalScore = 0;
-        let totalTimeSpent = 0; // 總累積秒數
-        let roundStartTime = 0; // 本局開始時間戳
+        let totalTimeSpent = 0; 
+        let roundStartTime = 0; 
         let currentLayoutConfig = {};
         let userBoard = Array(9).fill(null);
         let pickingSlot = -1;
@@ -428,7 +423,6 @@
         function startGame() {
             const nameInput = document.getElementById('player-name').value.trim();
             if (!nameInput) { alert("請輸入您的封印師大名！"); return; }
-            
             playerName = nameInput;
             document.getElementById('start-screen').style.display = 'none';
             currentRound = 1;
@@ -447,20 +441,20 @@
             document.getElementById('btn-next').style.display = 'none';
             document.getElementById('btn-solve').style.display = 'inline-block';
             document.getElementById('btn-solve').disabled = false;
-            document.getElementById('btn-solve').innerText = "🏳️ 放棄封印 (看解答)";
+            document.getElementById('btn-solve').innerText = "🏳️ 放棄 (看解答)";
             document.getElementById('btn-solve').className = "action-btn give-up"; 
             document.getElementById('grid-container').classList.remove('win-glow');
             document.getElementById('timer-disp').classList.remove('urgent');
 
-            startTimer(LEVEL_TIME[round]);
-            roundStartTime = Date.now(); // 記錄開始時刻
+            // 讀取該等級配置
+            const config = LEVEL_CONFIG[round];
+            startTimer(config.time);
+            roundStartTime = Date.now();
 
-            // 出題
-            let level = round;
             let solvable = false;
             let attempts = 0;
             let selectedShape, selectedTile;
-            const levelShapes = SHAPES.filter(s => s.level === level);
+            const levelShapes = SHAPES.filter(s => s.level === round);
             const levelTiles = TARGET_TILES;
 
             while (!solvable && attempts < 50) {
@@ -482,7 +476,7 @@
             }
             if (!solvable) { alert("生成失敗"); return; }
 
-            document.getElementById('level-info').innerText = `${selectedShape.name} (本題 ${selectedShape.score} 分)`;
+            document.getElementById('level-info').innerText = `${selectedShape.name} (通關${config.base}分 + 速通${config.bonus}分)`;
             document.getElementById('level-info').style.color = "#bdc3c7"; 
             
             userBoard = Array(9).fill(null);
@@ -517,7 +511,7 @@
 
         function handleTimeOut() {
             if (isRoundWon) return;
-            calculateTimeSpent(); // 計算耗時
+            calculateTimeSpent();
             forceSolve(false);
             document.getElementById('btn-solve').innerText = "⌛ 挑戰失敗";
             document.getElementById('btn-solve').className = "action-btn failed";
@@ -535,24 +529,23 @@
         }
 
         function calculateTimeSpent() {
-            // 計算本局實際花費秒數
             let spent = Math.floor((Date.now() - roundStartTime) / 1000);
             totalTimeSpent += spent;
-            
-            // 如果這局贏了，更新「單關最快紀錄」
-            if (isRoundWon && !isSolverUsed) {
-                updateLevelBest(currentRound, spent);
-            }
+            // 更新單關最快 (僅在未作弊且勝利時)
+            if (isRoundWon && !isSolverUsed) updateLevelBest(currentRound, spent);
+            return spent;
         }
 
         function nextLevel() {
             clearInterval(timerInterval);
-            calculateTimeSpent(); // 累加時間
+            const spent = calculateTimeSpent(); 
 
             if (!isSolverUsed) {
-                const scoreText = document.getElementById('level-info').innerText;
-                const score = parseInt(scoreText.match(/(\d+) 分/)[1]);
-                totalScore += score;
+                const config = LEVEL_CONFIG[currentRound];
+                let roundScore = config.base;
+                // 1分鐘(60秒)內完成，加獎勵分
+                if (spent <= 60) roundScore += config.bonus;
+                totalScore += roundScore;
             }
             updateHUD();
             currentRound++;
@@ -565,24 +558,22 @@
             document.getElementById('score-disp').innerText = totalScore;
         }
 
-        // --- 排行榜邏輯 (LocalStorage) ---
+        // --- 排行榜 ---
         function saveRecord() {
             const record = { name: playerName, score: totalScore, time: totalTimeSpent, date: Date.now() };
-            let lb = JSON.parse(localStorage.getItem('coludoku_lb_v2') || "[]");
+            let lb = JSON.parse(localStorage.getItem('coludoku_lb_v3') || "[]"); // v3 for 100pt system
             lb.push(record);
-            // 排序：先比分數高，再比時間少
             lb.sort((a,b) => b.score - a.score || a.time - b.time);
-            lb = lb.slice(0, 10); // 只留前10
-            localStorage.setItem('coludoku_lb_v2', JSON.stringify(lb));
+            lb = lb.slice(0, 10);
+            localStorage.setItem('coludoku_lb_v3', JSON.stringify(lb));
             return lb;
         }
 
         function updateLevelBest(level, time) {
-            let bests = JSON.parse(localStorage.getItem('coludoku_best_v2') || "{}");
-            // 如果還沒有紀錄，或是新紀錄更快
+            let bests = JSON.parse(localStorage.getItem('coludoku_best_v3') || "{}");
             if (!bests[level] || time < bests[level].time) {
                 bests[level] = { name: playerName, time: time };
-                localStorage.setItem('coludoku_best_v2', JSON.stringify(bests));
+                localStorage.setItem('coludoku_best_v3', JSON.stringify(bests));
             }
         }
 
@@ -595,18 +586,17 @@
         function showEndScreen() {
             document.getElementById('end-modal').style.display = 'flex';
             document.getElementById('end-player-name').innerText = `封印師：${playerName}`;
-            document.getElementById('end-score').innerText = totalScore;
+            document.getElementById('end-score').innerText = `${totalScore} / 100`;
             document.getElementById('end-time').innerText = formatTime(totalTimeSpent);
             
             let msg = "";
-            if (totalScore === 18) msg = "完美封印，傳奇封印師！🏆";
-            else if (totalScore >= 15) msg = "表現優異，至尊封印師！✨";
-            else if (totalScore > 11) msg = "挑戰完成，高級封印師！";
-            else if (totalScore > 6) msg = "再接再勵，初級封印師！";
+            if (totalScore === 100) msg = "完美封印，傳奇封印師！🏆";
+            else if (totalScore >= 90) msg = "表現優異，至尊封印師！✨";
+            else if (totalScore > 80) msg = "挑戰完成，高級封印師！";
+            else if (totalScore > 60) msg = "再接再勵，初級封印師！";
             else msg = "你需要更多修練...見習封印師！";
             document.getElementById('end-msg').innerText = msg;
 
-            // 儲存並顯示排行榜
             const lbData = saveRecord();
             const lbBody = document.getElementById('lb-body');
             lbBody.innerHTML = "";
@@ -616,19 +606,15 @@
                 lbBody.appendChild(tr);
             });
 
-            // 顯示各級最速
-            const bests = JSON.parse(localStorage.getItem('coludoku_best_v2') || "{}");
+            const bests = JSON.parse(localStorage.getItem('coludoku_best_v3') || "{}");
             const blGrid = document.getElementById('best-levels-grid');
             blGrid.innerHTML = "";
             for (let i=1; i<=6; i++) {
                 const rec = bests[i];
                 const div = document.createElement('div');
                 div.className = 'bl-item';
-                if(rec) {
-                    div.innerHTML = `<span class="bl-lvl">L${i}</span> ${rec.name} (${formatTime(rec.time)})`;
-                } else {
-                    div.innerHTML = `<span class="bl-lvl">L${i}</span> 虛位以待`;
-                }
+                if(rec) div.innerHTML = `<span class="bl-lvl">L${i}</span> ${rec.name} (${formatTime(rec.time)})`;
+                else div.innerHTML = `<span class="bl-lvl">L${i}</span> 虛位以待`;
                 blGrid.appendChild(div);
             }
         }
@@ -797,6 +783,13 @@
                 isRoundWon = true;
                 clearInterval(timerInterval);
                 playSound('win');
+                // 檢查是否速通
+                const spent = Math.floor((Date.now() - roundStartTime) / 1000);
+                if (spent <= 60) {
+                    setTimeout(() => playSound('bonus'), 800); // 延遲播放速通音效
+                    document.getElementById('level-info').innerText += " ⭐ 速通達成！";
+                    document.getElementById('level-info').style.color = "#f1c40f";
+                }
                 document.getElementById('grid-container').classList.add('win-glow');
                 document.getElementById('btn-next').style.display = 'inline-block';
                 document.getElementById('btn-solve').style.display = 'none';
