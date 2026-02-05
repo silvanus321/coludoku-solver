@@ -223,10 +223,10 @@
 
     <div id="start-screen">
         <div class="intro-box">
-            <div class="intro-title">🔮 色獨封印</div>
+            <div class="intro-title">🔮色獨封印師🔮</div>
             <div class="intro-desc">
-                挑戰 6 個等級的魔法陣<br>
-                <strong>滿分 100 分 (含速通獎勵)</strong>
+                行列寶石相異<br>
+                <strong>完成色獨封印</strong>
             </div>
             <input type="text" id="player-name" class="name-input" placeholder="請輸入封印師名字" maxlength="10">
             <button class="action-btn" onclick="startGame()">開始挑戰</button>
@@ -247,7 +247,7 @@
         <div class="level-info" id="level-info">Level I (5分 + 速通5分)</div>
         
         <div class="instruction-bar">
-            👆點擊放入/翻面 | 🔄點邊緣旋轉 | 🗑️長按移除
+            👆輕點中間翻面魔石 | 🔄輕點邊緣旋轉魔石 | 🗑️長按中間移除魔石
         </div>
 
         <div id="grid-container" class="main-grid"></div>
@@ -609,11 +609,11 @@
             document.getElementById('end-time').innerText = formatTime(totalTimeSpent);
             
             let msg = "";
-            if (totalScore === 100) msg = "完美封印，傳奇封印師！🏆";
-            else if (totalScore >= 90) msg = "表現優異，至尊封印師！✨";
-            else if (totalScore > 80) msg = "挑戰完成，高級封印師！";
-            else if (totalScore > 60) msg = "再接再勵，初級封印師！";
-            else msg = "你需要更多修練...見習封印師！";
+            if (totalScore === 100) msg = "超凡入聖，傳奇封印師！🏆";
+            else if (totalScore >= 90) msg = "出類拔萃，至尊封印師！✨";
+            else if (totalScore > 80) msg = "首屈一指，高級封印師！";
+            else if (totalScore > 60) msg = "中規中矩，初級封印師！";
+            else msg = "再接再勵...見習封印師！";
             document.getElementById('end-msg').innerText = msg;
 
             const lbData = saveRecord();
@@ -922,3 +922,4 @@
     </script>
 </body>
 </html>
+
