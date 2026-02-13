@@ -418,12 +418,12 @@
             { id: 36, name: "No.036", level: 6, active: [1,2,3,5,7,8,9], targets: [3,5,7] }
         ];
         const LEVEL_CONFIG = {
-            1: { time: 120, base: 5, bonus: 5 },
-            2: { time: 240, base: 5, bonus: 5 },
-            3: { time: 360, base: 10, bonus: 5 },
-            4: { time: 480, base: 10, bonus: 5 },
-            5: { time: 600, base: 20, bonus: 5 },
-            6: { time: 720, base: 20, bonus: 5 }
+            1: { time: 120, base: 12, bonus: 4 },
+            2: { time: 180, base: 12, bonus: 4 },
+            3: { time: 240, base: 12, bonus: 5 },
+            4: { time: 300, base: 12, bonus: 5 },
+            5: { time: 360, base: 12, bonus: 5 },
+            6: { time: 420, base: 12, bonus: 5 }
         };
 
         // --- 變數 ---
@@ -610,9 +610,9 @@
             
             let msg = "";
             if (totalScore === 100) msg = "超凡入聖，傳奇封印師！🏆";
-            else if (totalScore >= 90) msg = "出類拔萃，至尊封印師！✨";
-            else if (totalScore > 80) msg = "首屈一指，高級封印師！";
-            else if (totalScore > 60) msg = "中規中矩，初級封印師！";
+            else if (totalScore > 89) msg = "出類拔萃，至尊封印師！✨";
+            else if (totalScore > 79) msg = "首屈一指，高級封印師！";
+            else if (totalScore > 59) msg = "中規中矩，初級封印師！";
             else msg = "再接再勵...見習封印師！";
             document.getElementById('end-msg').innerText = msg;
 
@@ -922,4 +922,5 @@
     </script>
 </body>
 </html>
+
 
