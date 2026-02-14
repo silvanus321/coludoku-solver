@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>色獨封印法典 (傳說隨機版)</title>
+    <title>色獨封印法典 (傳說完全版)</title>
     <style>
-        /* --- 1. 基礎設定 --- */
+        /* --- 基礎設定 --- */
         body {
             font-family: "Microsoft JhengHei", Arial, sans-serif;
             background-color: #1a1a2e;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            display: flex; flex-direction: column; align-items: center;
             padding: 10px; margin: 0; color: white; min-height: 100vh;
             user-select: none; -webkit-user-select: none; touch-action: manipulation;
         }
@@ -19,41 +17,40 @@
         .header-box { width: 100%; max-width: 400px; text-align: center; margin: 5px 0; }
         h1 { margin: 0; letter-spacing: 2px; font-size: 1.5rem; text-shadow: 0 0 10px rgba(241,196,15,0.5); }
 
-        /* --- 2. 三色能量槽特效 --- */
+        /* --- 三色能量槽 --- */
         .energy-container {
             width: 100%; max-width: 400px; height: 16px;
             background: rgba(255, 255, 255, 0.1); border-radius: 10px;
             margin-bottom: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);
         }
-        #energy-fill { height: 100%; width: 100%; transition: width 1s linear, background-color 0.5s ease; }
+        #energy-fill { height: 100%; width: 100%; transition: width 1s linear; }
         .energy-purple { background: linear-gradient(90deg, #9b59b6, #8e44ad); box-shadow: 0 0 15px #9b59b6; animation: electricity 0.5s infinite alternate; }
         .energy-blue { background: #3498db; }
         .energy-red { background: #e74c3c; animation: shake 0.1s infinite; }
         @keyframes electricity { from { filter: brightness(1); } to { filter: brightness(1.3); } }
         @keyframes shake { 0% { transform: translateX(1px); } 50% { transform: translateX(-1px); } 100% { transform: translateX(1px); } }
 
-        /* --- 3. HUD 與 說明欄 --- */
+        /* --- HUD 與 說明欄 --- */
         .hud {
             display: grid; grid-template-columns: 1fr 1fr 1fr; width: 100%; max-width: 400px;
             background: rgba(255, 255, 255, 0.05); padding: 10px 15px; border-radius: 15px;
             margin-bottom: 8px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); text-align: center;
         }
         .hud-val { color: #f1c40f; display: block; font-family: monospace; font-size: 1.2rem; font-weight: bold; }
-        
         .instruction-bar {
             width: 100%; max-width: 400px; font-size: 0.8rem; color: #bdc3c7;
             background: rgba(0,0,0,0.3); padding: 8px 0; border-radius: 20px;
             margin-bottom: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* --- 4. 遊戲區 --- */
+        /* --- 遊戲區 --- */
         .game-container { position: relative; width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; }
         .main-grid {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
             background-color: #16213e; padding: 10px; border-radius: 12px;
             width: 100%; aspect-ratio: 1 / 1; box-sizing: border-box; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .main-grid.win-glow { box-shadow: 0 0 30px 15px rgba(241, 196, 15, 0.6); border: 2px solid #f1c40f; transition: 0.5s; }
+        .main-grid.win-glow { box-shadow: 0 0 30px 15px rgba(241, 196, 15, 0.6); border: 2px solid #f1c40f; }
 
         .block {
             background-color: #ecf0f1; border: 2px solid transparent; border-radius: 6px;
@@ -61,24 +58,31 @@
         }
         .block.fixed { border-color: #e74c3c; background-color: #fadbd8; }
         .block.user-placed { border-color: #3498db; }
-        .block-image { width: 100%; height: 100%; object-fit: contain; }
+        .block-image { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
         
+        .glow-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 20; border-radius: 12px; overflow: hidden; }
+        .glow-bar { position: absolute; box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.6); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 8px; }
+        .glow-row { left: 1%; width: 98%; height: 31%; background: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 25%, rgba(255,255,255,0) 75%, rgba(255,255,255,0.4) 100%); }
+        .glow-col { top: 1%; height: 98%; width: 31%; background: linear-gradient(to right, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 25%, rgba(255,255,255,0) 75%, rgba(255,255,255,0.4) 100%); }
+
         .zone-edge { position: absolute; inset: 0; z-index: 11; }
         .zone-center { position: absolute; inset: 20%; z-index: 12; border-radius: 50%; }
         .empty-slot { background-color: rgba(255,255,255,0.05); border: 2px dashed rgba(255,255,255,0.2); color: #555; font-size: 2rem; cursor: pointer; }
 
-        /* --- 5. 按鈕 --- */
+        /* --- 按鈕 --- */
         .btn-row { display: flex; gap: 10px; width: 100%; margin-top: 15px; }
         .action-btn { flex: 1; padding: 15px; font-size: 0.95rem; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .btn-reset { background-color: #f39c12; color: white; }
         .btn-solve { background-color: #7f8c8d; color: white; }
         .btn-next { background-color: #27ae60; color: white; width: 100%; display: none; margin-top: 15px; font-size: 1.1rem; height: 50px;}
 
-        /* --- 6. 介面彈窗 --- */
+        /* --- 結算與排行榜彈窗 --- */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
         .modal-content { background: white; color: #333; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; max-height: 90vh; overflow-y: auto; }
         .lb-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
         .lb-table td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+        .best-levels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .bl-item { background: #f9f9f9; padding: 6px; border-radius: 5px; font-size: 0.75rem; border: 1px solid #eee; text-align: left; }
     </style>
 </head>
 <body>
@@ -86,8 +90,8 @@
     <div id="start-screen" class="modal-overlay" style="display: flex; background: #1a1a2e;">
         <div class="modal-content" style="background: transparent; color: white;">
             <h1 style="color:#f1c40f; font-size: 2.5rem; margin-bottom:10px;">🔮 色獨封印師</h1>
-            <p style="margin-bottom: 30px;">行列魔石相異，完成色獨封印</p>
-            <input type="text" id="player-name" style="padding:15px; border-radius:10px; width:80%; text-align:center; font-size:1.1rem; border:none;" placeholder="請輸入封印師名號">
+            <p style="margin-bottom: 30px;">行列寶石相異，完成色獨封印</p>
+            <input type="text" id="player-name" style="padding:15px; border-radius:10px; width:80%; text-align:center; font-size:1.1rem; border:none;" placeholder="請輸入封印師名字">
             <button class="action-btn" style="background:#27ae60; margin-top:20px; width:80%; height:50px; font-size:1.2rem;" onclick="startGame()">開始封印</button>
         </div>
     </div>
@@ -110,9 +114,9 @@
         <div id="grid-container" class="main-grid"></div>
         <div class="btn-row" id="control-btns">
             <button class="action-btn btn-reset" onclick="resetMagicMatrix()">🔄 重置(還原魔法)</button>
-            <button class="action-btn btn-solve" onclick="forceSolve()">🏳️ 放棄 (禁忌魔法)</button>
+            <button class="action-btn btn-solve" id="btn-solve-text" onclick="forceSolve()">🏳️ 放棄(禁忌魔法)</button>
         </div>
-        <button id="btn-next" class="action-btn btn-next" onclick="nextLevel()">進入下一等級 ➡️</button>
+        <button id="btn-next" class="action-btn btn-next" onclick="nextLevel()">下一等級 ➡️</button>
     </div>
 
     <div id="end-modal" class="modal-overlay">
@@ -124,11 +128,18 @@
                 <div style="margin:10px 0;">總耗時：<span id="end-time" style="color:#e67e22; font-weight:bold;">00:00</span></div>
                 <div id="end-msg" style="margin-top:10px; font-weight:bold; font-size:1.2rem;"></div>
             </div>
+            
             <div style="text-align:left; margin-top:20px;">
-                <div style="font-weight:bold; border-bottom:2px solid #eee;">🏆 封印師排行榜</div>
+                <div style="font-weight:bold; border-bottom:2px solid #eee; padding-bottom:5px;">🏆 封印師排行榜 (TOP 10)</div>
                 <table class="lb-table"><tbody id="lb-body"></tbody></table>
             </div>
-            <button class="action-btn" style="background:#27ae60; color:white; width:100%; margin-top:20px;" onclick="location.reload()">再次挑戰</button>
+
+            <div style="text-align:left; margin-top:20px;">
+                <div style="font-weight:bold; border-bottom:2px solid #eee; padding-bottom:5px;">⚡ 各級最速通關</div>
+                <div id="best-levels-grid" class="best-levels"></div>
+            </div>
+
+            <button class="action-btn" style="background:#27ae60; color:white; width:100%; margin-top:20px;" onclick="location.reload()">再玩一次</button>
         </div>
     </div>
 
@@ -141,7 +152,7 @@
     </div>
 
     <script>
-        // --- 1. 資料庫 ---
+        // --- 完整資料庫 ---
         const BLOCKS = {
             1: { B: [[1,2],[3,4]], W: [[4,3],[6,5]] },
             2: { B: [[3,4],[5,6]], W: [[6,5],[2,1]] },
@@ -155,102 +166,61 @@
         };
 
         const SHAPES = [
-            { id: 1,  level: 1, active: [2,3,4,7,9], targets: [2,4,9] },
-            { id: 2,  level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
-            { id: 3,  level: 1, active: [1,3,5,8,9], targets: [1,5,9] },
-            { id: 4,  level: 1, active: [1,3,4,8,9], targets: [3,4,8] },
-            { id: 5,  level: 1, active: [1,2,4,6,8], targets: [1,6,8] },
-            { id: 6,  level: 1, active: [1,3,5,7,8], targets: [3,5,7] },
-            { id: 7,  level: 2, active: [2,4,5,8,9], targets: [2,4,9] },
-            { id: 8,  level: 2, active: [2,6,7,8,9], targets: [2,6,7] },
-            { id: 9,  level: 2, active: [1,2,5,8,9], targets: [1,5,9] },
-            { id: 10, level: 2, active: [2,3,4,5,8], targets: [3,4,8] },
-            { id: 11, level: 2, active: [1,2,3,6,8], targets: [1,6,8] },
-            { id: 12, level: 2, active: [2,3,5,7,8], targets: [3,5,7] },
-            { id: 13, level: 3, active: [2,4,6,7,8,9], targets: [2,4,9] },
-            { id: 14, level: 3, active: [2,4,5,6,7,9], targets: [2,6,7] },
-            { id: 15, level: 3, active: [1,3,5,7,8,9], targets: [1,5,9] },
-            { id: 16, level: 3, active: [2,3,4,6,8,9], targets: [3,4,8] },
-            { id: 17, level: 3, active: [1,2,5,6,7,8], targets: [1,6,8] },
-            { id: 18, level: 3, active: [1,3,5,6,7,9], targets: [3,5,7] },
-            { id: 19, level: 4, active: [2,4,5,6,8,9], targets: [2,4,9] },
-            { id: 20, level: 4, active: [2,5,6,7,8,9], targets: [2,6,7] },
-            { id: 21, level: 4, active: [1,2,3,5,6,9], targets: [1,5,9] },
-            { id: 22, level: 4, active: [2,3,4,5,6,8], targets: [3,4,8] },
-            { id: 23, level: 4, active: [1,2,3,5,6,8], targets: [1,6,8] },
-            { id: 24, level: 4, active: [1,2,3,4,5,7], targets: [3,5,7] },
-            { id: 25, level: 5, active: [1,2,4,5,6,8,9], targets: [2,4,9] },
-            { id: 26, level: 5, active: [1,2,4,6,7,8,9], targets: [2,6,7] },
-            { id: 27, level: 5, active: [1,3,5,6,7,8,9], targets: [1,5,9] },
-            { id: 28, level: 5, active: [2,3,4,5,6,7,8], targets: [3,4,8] },
-            { id: 29, level: 5, active: [1,2,3,4,6,8,9], targets: [1,6,8] },
-            { id: 30, level: 5, active: [1,3,4,5,7,8,9], targets: [3,5,7] },
-            { id: 31, level: 6, active: [1,2,3,4,6,7,9], targets: [2,4,9] },
-            { id: 32, level: 6, active: [2,4,5,6,7,8,9], targets: [2,6,7] },
-            { id: 33, level: 6, active: [1,3,4,5,6,7,9], targets: [1,5,9] },
-            { id: 34, level: 6, active: [1,2,3,4,7,8,9], targets: [3,4,8] },
-            { id: 35, level: 6, active: [1,2,4,5,6,7,8], targets: [1,6,8] },
-            { id: 36, level: 6, active: [1,2,3,5,7,8,9], targets: [3,5,7] }
+            { level: 1, active: [2,3,4,7,9], targets: [2,4,9] }, { level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
+            { level: 1, active: [1,3,5,8,9], targets: [1,5,9] }, { level: 1, active: [1,3,4,8,9], targets: [3,4,8] },
+            { level: 1, active: [1,2,4,6,8], targets: [1,6,8] }, { level: 1, active: [1,3,5,7,8], targets: [3,5,7] },
+            { level: 2, active: [2,4,5,8,9], targets: [2,4,9] }, { level: 2, active: [2,6,7,8,9], targets: [2,6,7] },
+            { level: 2, active: [1,2,5,8,9], targets: [1,5,9] }, { level: 2, active: [2,3,4,5,8], targets: [3,4,8] },
+            { level: 2, active: [1,2,3,6,8], targets: [1,6,8] }, { level: 2, active: [2,3,5,7,8], targets: [3,5,7] },
+            { level: 3, active: [2,4,6,7,8,9], targets: [2,4,9] }, { level: 3, active: [2,4,5,6,7,9], targets: [2,6,7] },
+            { level: 3, active: [1,3,5,7,8,9], targets: [1,5,9] }, { level: 3, active: [2,3,4,6,8,9], targets: [3,4,8] },
+            { level: 3, active: [1,2,5,6,7,8], targets: [1,6,8] }, { level: 3, active: [1,3,5,6,7,9], targets: [3,5,7] },
+            { level: 4, active: [2,4,5,6,8,9], targets: [2,4,9] }, { level: 4, active: [2,5,6,7,8,9], targets: [2,6,7] },
+            { level: 4, active: [1,2,3,5,6,9], targets: [1,5,9] }, { level: 4, active: [2,3,4,5,6,8], targets: [3,4,8] },
+            { level: 4, active: [1,2,3,5,6,8], targets: [1,6,8] }, { level: 4, active: [1,2,3,4,5,7], targets: [3,5,7] },
+            { level: 5, active: [1,2,4,5,6,8,9], targets: [2,4,9] }, { level: 5, active: [1,2,4,6,7,8,9], targets: [2,6,7] },
+            { level: 5, active: [1,3,5,6,7,8,9], targets: [1,5,9] }, { level: 5, active: [2,3,4,5,6,7,8], targets: [3,4,8] },
+            { level: 5, active: [1,2,3,4,6,8,9], targets: [1,6,8] }, { level: 5, active: [1,3,4,5,7,8,9], targets: [3,5,7] },
+            { level: 6, active: [1,2,3,4,6,7,9], targets: [2,4,9] }, { level: 6, active: [2,4,5,6,7,8,9], targets: [2,6,7] },
+            { level: 6, active: [1,3,4,5,6,7,9], targets: [1,5,9] }, { level: 6, active: [1,2,3,4,7,8,9], targets: [3,4,8] },
+            { level: 6, active: [1,2,4,5,6,7,8], targets: [1,6,8] }, { level: 6, active: [1,2,3,5,7,8,9], targets: [3,5,7] }
         ];
 
         const TARGET_TILES = [
-            { blocks: [{id:1, f:'B'}, {id:5, f:'B'}, {id:8, f:'W'}] },
-            { blocks: [{id:2, f:'B'}, {id:9, f:'B'}, {id:6, f:'W'}] },
-            { blocks: [{id:6, f:'B'}, {id:1, f:'W'}, {id:7, f:'B'}] },
-            { blocks: [{id:9, f:'W'}, {id:3, f:'B'}, {id:4, f:'W'}] },
-            { blocks: [{id:2, f:'W'}, {id:7, f:'W'}, {id:4, f:'B'}] },
-            { blocks: [{id:5, f:'W'}, {id:3, f:'W'}, {id:8, f:'B'}] },
-            { blocks: [{id:5, f:'B'}, {id:3, f:'B'}, {id:9, f:'W'}] },
-            { blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:8, f:'B'}] },
-            { blocks: [{id:4, f:'B'}, {id:8, f:'B'}, {id:2, f:'W'}] },
-            { blocks: [{id:3, f:'B'}, {id:6, f:'W'}, {id:7, f:'W'}] },
-            { blocks: [{id:9, f:'W'}, {id:6, f:'B'}, {id:1, f:'W'}] },
-            { blocks: [{id:4, f:'W'}, {id:2, f:'W'}, {id:7, f:'B'}] },
-            { blocks: [{id:3, f:'B'}, {id:4, f:'B'}, {id:7, f:'W'}] },
-            { blocks: [{id:9, f:'B'}, {id:4, f:'W'}, {id:1, f:'B'}] },
-            { blocks: [{id:7, f:'B'}, {id:5, f:'B'}, {id:2, f:'W'}] },
-            { blocks: [{id:6, f:'W'}, {id:8, f:'W'}, {id:2, f:'B'}] },
-            { blocks: [{id:5, f:'B'}, {id:8, f:'W'}, {id:3, f:'W'}] },
-            { blocks: [{id:1, f:'W'}, {id:9, f:'B'}, {id:6, f:'W'}] },
-            { blocks: [{id:2, f:'B'}, {id:6, f:'B'}, {id:9, f:'W'}] },
-            { blocks: [{id:7, f:'B'}, {id:4, f:'W'}, {id:3, f:'B'}] },
-            { blocks: [{id:9, f:'B'}, {id:4, f:'B'}, {id:1, f:'W'}] },
-            { blocks: [{id:1, f:'B'}, {id:8, f:'W'}, {id:4, f:'W'}] },
-            { blocks: [{id:9, f:'W'}, {id:5, f:'B'}, {id:2, f:'W'}] },
-            { blocks: [{id:8, f:'B'}, {id:6, f:'W'}, {id:2, f:'W'}] },
-            { blocks: [{id:1, f:'B'}, {id:6, f:'B'}, {id:7, f:'W'}] },
-            { blocks: [{id:3, f:'B'}, {id:8, f:'B'}, {id:6, f:'W'}] },
-            { blocks: [{id:5, f:'B'}, {id:9, f:'B'}, {id:3, f:'W'}] },
-            { blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:7, f:'W'}] },
-            { blocks: [{id:8, f:'W'}, {id:4, f:'B'}, {id:1, f:'W'}] },
-            { blocks: [{id:3, f:'W'}, {id:4, f:'W'}, {id:9, f:'B'}] },
-            { blocks: [{id:4, f:'B'}, {id:2, f:'B'}, {id:8, f:'W'}] },
-            { blocks: [{id:2, f:'B'}, {id:5, f:'W'}, {id:7, f:'B'}] },
-            { blocks: [{id:8, f:'B'}, {id:6, f:'B'}, {id:3, f:'W'}] },
-            { blocks: [{id:5, f:'W'}, {id:2, f:'B'}, {id:9, f:'W'}] },
-            { blocks: [{id:3, f:'W'}, {id:7, f:'W'}, {id:6, f:'B'}] },
-            { blocks: [{id:7, f:'B'}, {id:5, f:'W'}, {id:1, f:'W'}] }
+            { blocks: [{id:1, f:'B'}, {id:5, f:'B'}, {id:8, f:'W'}] }, { blocks: [{id:2, f:'B'}, {id:9, f:'B'}, {id:6, f:'W'}] },
+            { blocks: [{id:6, f:'B'}, {id:1, f:'W'}, {id:7, f:'B'}] }, { blocks: [{id:9, f:'W'}, {id:3, f:'B'}, {id:4, f:'W'}] },
+            { blocks: [{id:2, f:'W'}, {id:7, f:'W'}, {id:4, f:'B'}] }, { blocks: [{id:5, f:'W'}, {id:3, f:'W'}, {id:8, f:'B'}] },
+            { blocks: [{id:5, f:'B'}, {id:3, f:'B'}, {id:9, f:'W'}] }, { blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:8, f:'B'}] },
+            { blocks: [{id:4, f:'B'}, {id:8, f:'B'}, {id:2, f:'W'}] }, { blocks: [{id:3, f:'B'}, {id:6, f:'W'}, {id:7, f:'W'}] },
+            { blocks: [{id:9, f:'W'}, {id:6, f:'B'}, {id:1, f:'W'}] }, { blocks: [{id:4, f:'W'}, {id:2, f:'W'}, {id:7, f:'B'}] },
+            { blocks: [{id:3, f:'B'}, {id:4, f:'B'}, {id:7, f:'W'}] }, { blocks: [{id:9, f:'B'}, {id:4, f:'W'}, {id:1, f:'B'}] },
+            { blocks: [{id:7, f:'B'}, {id:5, f:'B'}, {id:2, f:'W'}] }, { blocks: [{id:6, f:'W'}, {id:8, f:'W'}, {id:2, f:'B'}] },
+            { blocks: [{id:5, f:'B'}, {id:8, f:'W'}, {id:3, f:'W'}] }, { blocks: [{id:1, f:'W'}, {id:9, f:'B'}, {id:6, f:'W'}] },
+            { blocks: [{id:2, f:'B'}, {id:6, f:'B'}, {id:9, f:'W'}] }, { blocks: [{id:7, f:'B'}, {id:4, f:'W'}, {id:3, f:'B'}] },
+            { blocks: [{id:9, f:'B'}, {id:4, f:'B'}, {id:1, f:'W'}] }, { blocks: [{id:1, f:'B'}, {id:8, f:'W'}, {id:4, f:'W'}] },
+            { blocks: [{id:9, f:'W'}, {id:5, f:'B'}, {id:2, f:'W'}] }, { blocks: [{id:8, f:'B'}, {id:6, f:'W'}, {id:2, f:'W'}] },
+            { blocks: [{id:1, f:'B'}, {id:6, f:'B'}, {id:7, f:'W'}] }, { blocks: [{id:3, f:'B'}, {id:8, f:'B'}, {id:6, f:'W'}] },
+            { blocks: [{id:5, f:'B'}, {id:9, f:'B'}, {id:3, f:'W'}] }, { blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:7, f:'W'}] },
+            { blocks: [{id:8, f:'W'}, {id:4, f:'B'}, {id:1, f:'W'}] }, { blocks: [{id:3, f:'W'}, {id:4, f:'W'}, {id:9, f:'B'}] },
+            { blocks: [{id:4, f:'B'}, {id:2, f:'B'}, {id:8, f:'W'}] }, { blocks: [{id:2, f:'B'}, {id:5, f:'W'}, {id:7, f:'B'}] },
+            { blocks: [{id:8, f:'B'}, {id:6, f:'B'}, {id:3, f:'W'}] }, { blocks: [{id:5, f:'W'}, {id:2, f:'B'}, {id:9, f:'W'}] },
+            { blocks: [{id:3, f:'W'}, {id:7, f:'W'}, {id:6, f:'B'}] }, { blocks: [{id:7, f:'B'}, {id:5, f:'W'}, {id:1, f:'W'}] }
         ];
 
         const LEVEL_SETTINGS = {
-            1: { title: "I",   time: 120, base: 12, bonus: 1 },
-            2: { title: "II",  time: 180, base: 12, bonus: 2 },
-            3: { title: "III", time: 240, base: 13, bonus: 3 },
-            4: { title: "IV",  time: 300, base: 13, bonus: 4 },
-            5: { title: "V",   time: 360, base: 14, bonus: 5 },
-            6: { title: "VI",  time: 420, base: 14, bonus: 6 }
+            1: { title: "I", time: 120, base: 12, bonus: 1 }, 2: { title: "II", time: 180, base: 12, bonus: 2 },
+            3: { title: "III", time: 240, base: 13, bonus: 3 }, 4: { title: "IV", time: 300, base: 13, bonus: 4 },
+            5: { title: "V", time: 360, base: 14, bonus: 5 }, 6: { title: "VI", time: 420, base: 14, bonus: 6 }
         };
 
         // --- 變數 ---
-        let currentLevel = 1; let totalScore = 0; let totalTimeSpent = 0; let timeLeft = 0;
-        let roundStartTime = 0; let timerInterval; let userBoard = Array(9).fill(null);
-        let currentLayout = { active: [], fixed: [] }; let playerName = ""; let isWon = false;
-        let solverUsed = false; let longPressTimer;
+        let currentLevel = 1, totalScore = 0, totalTimeSpent = 0, timeLeft = 0;
+        let roundStartTime = 0, timerInterval, userBoard = Array(9).fill(null);
+        let currentLayout = { active: [], fixed: [] }, playerName = "", isWon = false, solverUsed = false, longPressTimer;
 
-        // --- 核心流程 ---
         function startGame() {
             playerName = document.getElementById('player-name').value.trim();
-            if(!playerName) return alert("該如何稱呼您");
+            if(!playerName) return alert("請輸入名號！");
             document.getElementById('start-screen').style.display = 'none';
             loadLevel();
         }
@@ -258,76 +228,116 @@
         function loadLevel() {
             isWon = false; solverUsed = false;
             const config = LEVEL_SETTINGS[currentLevel];
-            timeLeft = config.time;
-            roundStartTime = Date.now();
+            timeLeft = config.time; roundStartTime = Date.now();
             document.getElementById('lvl-disp').innerText = config.title;
             document.getElementById('game-title').innerText = `等級 ${config.title}`;
             document.getElementById('btn-next').style.display = 'none';
             document.getElementById('control-btns').style.display = 'flex';
             document.getElementById('grid-container').classList.remove('win-glow');
 
-            // --- 隨機出題邏輯 ---
             const possibleShapes = SHAPES.filter(s => s.level === currentLevel);
             const selectedShape = possibleShapes[Math.floor(Math.random() * possibleShapes.length)];
             const selectedTile = TARGET_TILES[Math.floor(Math.random() * TARGET_TILES.length)];
 
             userBoard = Array(9).fill(null);
-            currentLayout = { active: selectedShape.active, fixed: [] };
-
+            currentLayout.active = selectedShape.active;
+            currentLayout.fixed = [];
             selectedShape.targets.forEach((pos, idx) => {
                 const bData = selectedTile.blocks[idx];
                 const b = { id: bData.id, face: bData.f, rot: 0, isFixed: true };
                 userBoard[pos-1] = b;
                 currentLayout.fixed.push({ pos: pos-1, ...b });
             });
-
             renderGrid();
             startTimer();
         }
 
         function startTimer() {
-            clearInterval(timerInterval);
-            updateTimerUI();
+            clearInterval(timerInterval); updateTimerUI();
             timerInterval = setInterval(() => {
-                timeLeft--;
-                updateTimerUI();
+                timeLeft--; updateTimerUI();
                 if(timeLeft <= 0) { clearInterval(timerInterval); alert("能量耗盡！"); finishRound(false); }
             }, 1000);
         }
 
         function updateTimerUI() {
             const config = LEVEL_SETTINGS[currentLevel];
-            const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
-            const s = (timeLeft % 60).toString().padStart(2, '0');
+            const m = Math.floor(timeLeft/60).toString().padStart(2,'0'), s = (timeLeft%60).toString().padStart(2,'0');
             document.getElementById('timer-disp').innerText = `${m}:${s}`;
             const fill = document.getElementById('energy-fill');
-            fill.style.width = (timeLeft / config.time * 100) + "%";
-            const elapsed = Math.floor((Date.now() - roundStartTime) / 1000);
-            
+            fill.style.width = (timeLeft/config.time * 100) + "%";
+            const elapsed = Math.floor((Date.now() - roundStartTime)/1000);
             fill.className = "";
-            if (elapsed <= 60) fill.classList.add('energy-purple');
-            else if (timeLeft <= 60) fill.classList.add('energy-red');
+            if(elapsed <= 60) fill.classList.add('energy-purple');
+            else if(timeLeft <= 60) fill.classList.add('energy-red');
             else fill.classList.add('energy-blue');
         }
 
         function resetMagicMatrix() {
             if(isWon) return;
             userBoard = Array(9).fill(null);
-            currentLayout.fixed.forEach(item => {
-                userBoard[item.pos] = { id: item.id, face: item.face, rot: item.rot, isFixed: true };
-            });
+            currentLayout.fixed.forEach(item => { userBoard[item.pos] = { id: item.id, face: item.face, rot: item.rot, isFixed: true }; });
             renderGrid();
         }
 
-        // --- 核心驗證邏輯 ---
         function getRotatedMatrix(matrix, times) {
             let m = JSON.parse(JSON.stringify(matrix));
-            for (let t = 0; t < times; t++) {
+            for(let t=0; t<times; t++) {
                 const newM = [[0,0],[0,0]];
-                newM[0][1] = m[0][0]; newM[1][1] = m[0][1];
-                newM[1][0] = m[1][1]; newM[0][0] = m[1][0];
+                newM[0][1] = m[0][0]; newM[1][1] = m[0][1]; newM[1][0] = m[1][1]; newM[0][0] = m[1][0];
                 m = newM;
             } return m;
+        }
+
+        function get6x6Grid(board) {
+            let grid = Array(6).fill().map(()=>Array(6).fill(0));
+            board.forEach((b, i) => {
+                if(!b) return;
+                let br = Math.floor(i/3)*2, bc = (i%3)*2;
+                let m = getRotatedMatrix(BLOCKS[b.id][b.face], b.rot);
+                grid[br][bc] = m[0][0]; grid[br][bc+1] = m[0][1];
+                grid[br+1][bc] = m[1][0]; grid[br+1][bc+1] = m[1][1];
+            });
+            return grid;
+        }
+
+        function isLineValid(grid, idx, isRow) {
+            let seen = new Set();
+            for(let i=0; i<6; i++) {
+                let v = isRow ? grid[idx][i] : grid[i][idx];
+                if(v === 0) return false;
+                if(seen.has(v)) return false;
+                seen.add(v);
+            }
+            return true;
+        }
+
+        function updateGlows() {
+            const container = document.getElementById('grid-container');
+            let existingGlow = container.querySelector('.glow-overlay');
+            if(existingGlow) existingGlow.remove();
+
+            const glowLayer = document.createElement('div');
+            glowLayer.className = 'glow-overlay';
+            container.appendChild(glowLayer);
+
+            const grid = get6x6Grid(userBoard);
+            for(let r=0; r<3; r++) {
+                if(isLineValid(grid, r*2, true) && isLineValid(grid, r*2+1, true)) {
+                    const glow = document.createElement('div');
+                    glow.className = 'glow-bar glow-row';
+                    glow.style.top = (r*33.33 + 0.5) + '%';
+                    glowLayer.appendChild(glow);
+                }
+            }
+            for(let c=0; c<3; c++) {
+                if(isLineValid(grid, c*2, false) && isLineValid(grid, c*2+1, false)) {
+                    const glow = document.createElement('div');
+                    glow.className = 'glow-bar glow-col';
+                    glow.style.left = (c*33.33 + 0.5) + '%';
+                    glowLayer.appendChild(glow);
+                }
+            }
         }
 
         function renderGrid() {
@@ -349,7 +359,6 @@
                     if(!b.isFixed) {
                         const center = document.createElement('div'); center.className = 'zone-center';
                         center.onclick = (e) => { e.stopPropagation(); if(!isWon) { b.face = (b.face==='B'?'W':'B'); renderGrid(); } };
-                        // 長按移除
                         const clearB = () => { userBoard[i] = null; renderGrid(); };
                         center.onmousedown = () => { longPressTimer = setTimeout(clearB, 600); };
                         center.ontouchstart = () => { longPressTimer = setTimeout(clearB, 600); };
@@ -357,39 +366,24 @@
                         center.ontouchend = () => clearTimeout(longPressTimer);
                         div.appendChild(center);
                     }
-                } else {
-                    div.className += ' empty-slot'; div.innerText = "+";
-                    div.onclick = () => openPicker(i);
-                }
+                } else { div.className += ' empty-slot'; div.innerText = "+"; div.onclick = () => openPicker(i); }
                 container.appendChild(div);
             }
+            updateGlows();
             if(shape.every(p => userBoard[p-1] !== null)) checkWin();
         }
 
         function checkWin() {
-            let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
-            for(let i=0; i<9; i++) {
-                if(!userBoard[i]) continue;
-                let b = userBoard[i];
-                let br = Math.floor(i / 3) * 2; let bc = (i % 3) * 2;
-                let m = getRotatedMatrix(BLOCKS[b.id][b.face], b.rot);
-                fullGrid[br][bc] = m[0][0]; fullGrid[br][bc+1] = m[0][1];
-                fullGrid[br+1][bc] = m[1][0]; fullGrid[br+1][bc+1] = m[1][1];
-            }
-            for (let i = 0; i < 6; i++) {
-                let rS = new Set(), cS = new Set();
-                for (let j = 0; j < 6; j++) {
-                    let rv = fullGrid[i][j], cv = fullGrid[j][i];
-                    if (rv!==0){ if(rS.has(rv)) return; rS.add(rv); }
-                    if (cv!==0){ if(cS.has(cv)) return; cS.add(cv); }
-                }
+            const grid = get6x6Grid(userBoard);
+            for(let i=0; i<6; i++) {
+                if(!isLineValid(grid, i, true) || !isLineValid(grid, i, false)) return;
             }
             finishRound(true);
         }
 
         function finishRound(success) {
             isWon = true; clearInterval(timerInterval);
-            const spent = Math.floor((Date.now() - roundStartTime) / 1000);
+            const spent = Math.floor((Date.now() - roundStartTime)/1000);
             totalTimeSpent += spent;
             if(success && !solverUsed) {
                 const config = LEVEL_SETTINGS[currentLevel];
@@ -403,12 +397,73 @@
             document.getElementById('btn-next').style.display = 'block';
         }
 
-        // --- 排行與結算 ---
-        function updateLevelBest(lvl, time) {
-            let bests = JSON.parse(localStorage.getItem('coludoku_best_v3') || "{}");
-            if (!bests[lvl] || time < bests[lvl].time) {
-                bests[lvl] = { name: playerName, time: time };
-                localStorage.setItem('coludoku_best_v3', JSON.stringify(bests));
+        function forceSolve() {
+            solverUsed = true;
+            let board = JSON.parse(JSON.stringify(userBoard));
+            let usedIDs = new Set();
+            board.forEach(b => { if(b) usedIDs.add(b.id); });
+
+            if(solveRecursive(0, board, usedIDs)) {
+                userBoard = board; renderGrid();
+                alert("使用禁忌魔法，本關不計分。"); finishRound(true);
+            } else { alert("此關無解"); }
+        }
+
+        function solveRecursive(idx, board, usedIDs) {
+            if(idx >= 9) return true;
+            if(!currentLayout.active.includes(idx+1)) return solveRecursive(idx+1, board, usedIDs);
+            if(board[idx] && board[idx].isFixed) return solveRecursive(idx+1, board, usedIDs);
+
+            for(let id=1; id<=9; id++) {
+                if(usedIDs.has(id)) continue;
+                usedIDs.add(id);
+                for(let face of ['B','W']) {
+                    for(let rot=0; rot<4; rot++) {
+                        board[idx] = { id, face, rot, isFixed: false };
+                        if(isValidPartially(board)) { if(solveRecursive(idx+1, board, usedIDs)) return true; }
+                    }
+                }
+                board[idx] = null; usedIDs.delete(id);
+            }
+            return false;
+        }
+
+        function isValidPartially(board) {
+            let grid = get6x6Grid(board);
+            for(let i=0; i<6; i++) {
+                let rS = new Set(), cS = new Set();
+                for(let j=0; j<6; j++) {
+                    let rv = grid[i][j], cv = grid[j][i];
+                    if(rv!==0){ if(rS.has(rv)) return false; rS.add(rv); }
+                    if(cv!==0){ if(cS.has(cv)) return false; cS.add(cv); }
+                }
+            }
+            return true;
+        }
+
+        function openPicker(i) {
+            const grid = document.getElementById('picker-grid'); grid.innerHTML = "";
+            const used = userBoard.filter(b => b).map(b => b.id);
+            for(let id=1; id<=9; id++) {
+                if(used.includes(id)) continue;
+                const item = document.createElement('div');
+                item.style.border="1px solid #ddd";
+                item.innerHTML = `<img src="images/block_${id}_B.png" style="width:100%">`;
+                item.onclick = () => { userBoard[i] = { id, face: 'B', rot: 0, isFixed: false }; closePicker(); renderGrid(); };
+                grid.appendChild(item);
+            }
+            document.getElementById('picker-modal').style.display = 'flex';
+        }
+
+        function closePicker() { document.getElementById('picker-modal').style.display = 'none'; }
+        function nextLevel() { if(currentLevel < 6) { currentLevel++; loadLevel(); } else showEndScreen(); }
+
+        // --- 排行與統計 ---
+        function updateLevelBest(lvl, t) {
+            let b = JSON.parse(localStorage.getItem('coludoku_best_v3')||"{}");
+            if(!b[lvl] || t < b[lvl].time) {
+                b[lvl] = { name: playerName, time: t };
+                localStorage.setItem('coludoku_best_v3', JSON.stringify(b));
             }
         }
 
@@ -417,38 +472,32 @@
             document.getElementById('end-player-name').innerText = `封印師：${playerName}`;
             document.getElementById('end-score').innerText = totalScore;
             document.getElementById('end-time').innerText = formatTime(totalTimeSpent);
-            let msg = "", color = "";
-            if (totalScore >= 100) { msg = "超凡入聖，傳奇封印師！🏆"; color = "#f1c40f"; }
-            else if (totalScore >= 90) { msg = "出類拔萃，至尊封印師！✨"; color = "#9b59b6"; }
-            else if (totalScore >= 75) { msg = "首屈一指，高級封印師！"; color = "#27ae60"; }
-            else if (totalScore >= 60) { msg = "中規中矩，初級封印師！"; color = "#27ae60"; }
-            else { msg = "再接再勵...見習封印師！"; color = "#7f8c8d"; }
-            const em = document.getElementById('end-msg'); em.innerText = msg; em.style.color = color;
             
-            let lb = JSON.parse(localStorage.getItem('coludoku_lb_v3') || "[]");
+            let msg = "", color = "";
+            if (totalScore === 100) { msg = "超凡入聖，傳說封印師！🏆"; color = "#f1c40f"; }
+            else if (totalScore >= 90) { msg = "首屈一指，至尊封印師！✨"; color = "#9b59b6"; }
+            else if (totalScore >= 75) { msg = "出類拔萃，高級封印師！"; color = "#3498db"; }
+            else if (totalScore >= 60) { msg = "中規中矩，初級封印師！"; color = "#27ae60"; }
+            else { msg = "再接再勵，見習封印師！"; color = "#7f8c8d"; }
+            
+            const em = document.getElementById('end-msg');
+            em.innerText = msg; em.style.color = color;
+            
+            let lb = JSON.parse(localStorage.getItem('coludoku_lb_v3')||"[]");
             lb.push({ name: playerName, score: totalScore, time: totalTimeSpent });
-            lb.sort((a,b) => b.score - a.score || a.time - b.time); lb = lb.slice(0, 10);
+            lb.sort((a,b)=> b.score - a.score || a.time - b.time);
+            lb = lb.slice(0, 10);
             localStorage.setItem('coludoku_lb_v3', JSON.stringify(lb));
-            document.getElementById('lb-body').innerHTML = lb.map((r,i) => `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.score}分</td><td>${formatTime(r.time)}</td></tr>`).join('');
+            document.getElementById('lb-body').innerHTML = lb.map((r,i)=> `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.score}分</td><td>${formatTime(r.time)}</td></tr>`).join('');
+            
+            // 顯示最速紀錄
+            const bests = JSON.parse(localStorage.getItem('coludoku_best_v3') || "{}");
+            document.getElementById('best-levels-grid').innerHTML = [1,2,3,4,5,6].map(i => {
+                const r = bests[i];
+                return `<div class="bl-item"><b>L${i}</b>: ${r ? r.name + ' (' + formatTime(r.time) + ')' : '無資料'}</div>`;
+            }).join('');
         }
-
-        function openPicker(i) {
-            const grid = document.getElementById('picker-grid'); grid.innerHTML = "";
-            const used = userBoard.filter(b => b).map(b => b.id);
-            for(let id=1; id<=9; id++) {
-                if(used.includes(id)) continue;
-                const item = document.createElement('div'); item.style.border="1px solid #ddd"; item.innerHTML = `<img src="images/block_${id}_B.png" style="width:100%">`;
-                item.onclick = () => { userBoard[i] = { id: id, face: 'B', rot: 0, isFixed: false }; closePicker(); renderGrid(); };
-                grid.appendChild(item);
-            }
-            document.getElementById('picker-modal').style.display = 'flex';
-        }
-        function closePicker() { document.getElementById('picker-modal').style.display = 'none'; }
-        function nextLevel() { if(currentLevel < 6) { currentLevel++; loadLevel(); } else showEndScreen(); }
         function formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; }
-        function forceSolve() { solverUsed = true; finishRound(true); } // 簡化處理
     </script>
 </body>
 </html>
-
-
