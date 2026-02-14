@@ -3,156 +3,414 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>色獨封印法典 (傳說完全版)</title>
+    <title>色獨封印師 (1.0版)</title>
     <style>
-        /* --- 基礎設定 --- */
+        /* --- 1. 基礎設定 --- */
         body {
             font-family: "Microsoft JhengHei", Arial, sans-serif;
-            background-color: #1a1a2e;
-            display: flex; flex-direction: column; align-items: center;
-            padding: 10px; margin: 0; color: white; min-height: 100vh;
-            user-select: none; -webkit-user-select: none; touch-action: manipulation;
+            background-color: #2c3e50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            margin: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            color: white;
+            min-height: 100vh;
         }
 
-        .header-box { width: 100%; max-width: 400px; text-align: center; margin: 5px 0; }
-        h1 { margin: 0; letter-spacing: 2px; font-size: 1.5rem; text-shadow: 0 0 10px rgba(241,196,15,0.5); }
-
-        /* --- 三色能量槽 --- */
-        .energy-container {
-            width: 100%; max-width: 400px; height: 16px;
-            background: rgba(255, 255, 255, 0.1); border-radius: 10px;
-            margin-bottom: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);
+        /* 標題 */
+        .header-box {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            margin: 10px 0;
         }
-        #energy-fill { height: 100%; width: 100%; transition: width 1s linear; }
-        .energy-purple { background: linear-gradient(90deg, #9b59b6, #8e44ad); box-shadow: 0 0 15px #9b59b6; animation: electricity 0.5s infinite alternate; }
-        .energy-blue { background: #3498db; }
-        .energy-red { background: #e74c3c; animation: shake 0.1s infinite; }
-        @keyframes electricity { from { filter: brightness(1); } to { filter: brightness(1.3); } }
-        @keyframes shake { 0% { transform: translateX(1px); } 50% { transform: translateX(-1px); } 100% { transform: translateX(1px); } }
 
-        /* --- HUD 與 說明欄 --- */
+        h1 { margin: 0; letter-spacing: 2px; font-size: 1.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3); display: inline-block; }
+
+        /* --- 2. HUD (狀態列) --- */
         .hud {
-            display: grid; grid-template-columns: 1fr 1fr 1fr; width: 100%; max-width: 400px;
-            background: rgba(255, 255, 255, 0.05); padding: 10px 15px; border-radius: 15px;
-            margin-bottom: 8px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); text-align: center;
-        }
-        .hud-val { color: #f1c40f; display: block; font-family: monospace; font-size: 1.2rem; font-weight: bold; }
-        .instruction-bar {
-            width: 100%; max-width: 400px; font-size: 0.8rem; color: #bdc3c7;
-            background: rgba(0,0,0,0.3); padding: 8px 0; border-radius: 20px;
-            margin-bottom: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 50px;
+            margin-bottom: 5px; /* 稍微縮小間距給時間條 */
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            align-items: center;
+            text-align: center;
         }
 
-        /* --- 遊戲區 --- */
-        .game-container { position: relative; width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; }
-        .main-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
-            background-color: #16213e; padding: 10px; border-radius: 12px;
-            width: 100%; aspect-ratio: 1 / 1; box-sizing: border-box; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        .hud-item { font-weight: bold; font-size: 0.9rem; }
+        .hud-val { color: #f1c40f; display: block; font-family: monospace; font-size: 1.2rem; }
+        .hud-val.urgent { color: #e74c3c; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        /* --- 新增：3色時間槽 --- */
+        .time-bar-container {
+            width: 100%;
+            max-width: 380px;
+            height: 10px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 5px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        .main-grid.win-glow { box-shadow: 0 0 30px 15px rgba(241, 196, 15, 0.6); border: 2px solid #f1c40f; }
+
+        .time-bar-fill {
+            height: 100%;
+            width: 100%;
+            background-color: #3498db;
+            transition: width 1s linear, background-color 0.3s ease;
+            box-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        /* 紫色：增幅狀態 (電光) */
+        .time-bar-fill.state-purple {
+            background-color: #9b59b6;
+            box-shadow: 0 0 15px #8e44ad, 0 0 5px #fff;
+            animation: electric 0.2s infinite alternate;
+        }
+        @keyframes electric {
+            0% { opacity: 1; box-shadow: 0 0 15px #8e44ad; }
+            100% { opacity: 0.8; box-shadow: 0 0 25px #d2b4de; }
+        }
+
+        /* 藍色：穩定狀態 */
+        .time-bar-fill.state-blue {
+            background-color: #3498db;
+            box-shadow: 0 0 5px #2980b9;
+        }
+
+        /* 紅色：不穩定狀態 (震動) */
+        .time-bar-fill.state-red {
+            background-color: #c0392b;
+            box-shadow: 0 0 15px #e74c3c;
+            animation: shakeBar 0.5s infinite;
+        }
+        @keyframes shakeBar {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-1px); opacity: 0.8; }
+            75% { transform: translateX(1px); opacity: 1; }
+            100% { transform: translateX(0); }
+        }
+
+        /* --- 3. 遊戲區 --- */
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .instruction-bar {
+            font-size: 0.85rem;
+            color: #bdc3c7;
+            background: rgba(0,0,0,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+            white-space: nowrap;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            background-color: #34495e;
+            padding: 10px;
+            border-radius: 12px;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            box-sizing: border-box;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .main-grid.win-glow {
+            box-shadow: 0 0 30px 10px rgba(241, 196, 15, 0.6);
+            border: 2px solid #f1c40f;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 15px 5px rgba(241, 196, 15, 0.4); }
+            50% { box-shadow: 0 0 30px 15px rgba(241, 196, 15, 0.8); }
+            100% { box-shadow: 0 0 15px 5px rgba(241, 196, 15, 0.4); }
+        }
 
         .block {
-            background-color: #ecf0f1; border: 2px solid transparent; border-radius: 6px;
-            display: flex; justify-content: center; align-items: center; aspect-ratio: 1 / 1; position: relative;
+            background-color: #ecf0f1;
+            border: 2px solid transparent;
+            position: relative;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            aspect-ratio: 1 / 1;
         }
-        .block.fixed { border-color: #e74c3c; background-color: #fadbd8; }
-        .block.user-placed { border-color: #3498db; }
-        .block-image { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+        .block.fixed { border-color: #c0392b; background-color: #fadbd8; }
+        .block.user-placed { border-color: #2980b9; }
+        .block-image { width: 100%; height: 100%; object-fit: contain; transition: transform 0.2s ease; }
         
-        .glow-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 20; border-radius: 12px; overflow: hidden; }
-        .glow-bar { position: absolute; box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.6); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 8px; }
-        .glow-row { left: 1%; width: 98%; height: 31%; background: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 25%, rgba(255,255,255,0) 75%, rgba(255,255,255,0.4) 100%); }
-        .glow-col { top: 1%; height: 98%; width: 31%; background: linear-gradient(to right, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 25%, rgba(255,255,255,0) 75%, rgba(255,255,255,0.4) 100%); }
+        .empty-slot { 
+            background-color: rgba(0,0,0,0.2); 
+            color: #7f8c8d; 
+            font-size: 2rem; 
+            cursor: pointer; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            border: 2px dashed rgba(255,255,255,0.1);
+        }
 
-        .zone-edge { position: absolute; inset: 0; z-index: 11; }
-        .zone-center { position: absolute; inset: 20%; z-index: 12; border-radius: 50%; }
-        .empty-slot { background-color: rgba(255,255,255,0.05); border: 2px dashed rgba(255,255,255,0.2); color: #555; font-size: 2rem; cursor: pointer; }
+        .zone-edge { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 11; }
+        .zone-center { position: absolute; top: 20%; left: 20%; width: 60%; height: 60%; z-index: 12; border-radius: 50%; }
 
-        /* --- 按鈕 --- */
-        .btn-row { display: flex; gap: 10px; width: 100%; margin-top: 15px; }
-        .action-btn { flex: 1; padding: 15px; font-size: 0.95rem; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .btn-reset { background-color: #f39c12; color: white; }
-        .btn-solve { background-color: #7f8c8d; color: white; }
-        .btn-next { background-color: #27ae60; color: white; width: 100%; display: none; margin-top: 15px; font-size: 1.1rem; height: 50px;}
+        /* 光暈 */
+        .glow-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; border-radius: 12px; overflow: hidden; }
+        .glow-bar {
+            position: absolute;
+            box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            transition: opacity 0.3s;
+        }
+        .glow-row { 
+            left: 1%; width: 98%; height: 31%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 25%, rgba(255,255,255,0) 75%, rgba(255,255,255,0.5) 100%);
+        }
+        .glow-col { 
+            top: 1%; height: 98%; width: 31%;
+            background: linear-gradient(to right, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 25%, rgba(255,255,255,0) 75%, rgba(255,255,255,0.5) 100%);
+        }
 
-        /* --- 結算與排行榜彈窗 --- */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
-        .modal-content { background: white; color: #333; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; max-height: 90vh; overflow-y: auto; }
-        .lb-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
-        .lb-table td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+        /* --- 4. 按鈕 --- */
+        .action-btn {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            width: 80%;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+        .action-btn:active { transform: scale(0.95); }
+        
+        /* 按鈕群組 (用於 重置 與 放棄) */
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 20px;
+            gap: 15px;
+        }
+
+        .action-btn.give-up { 
+            background-color: #7f8c8d; font-size: 1rem; padding: 10px 10px; flex: 1; margin-top: 0;
+        }
+        .action-btn.give-up:hover { background-color: #95a5a6; }
+        
+        .action-btn.btn-reset {
+            background-color: #16a085; font-size: 1rem; padding: 10px 10px; flex: 1; margin-top: 0;
+        }
+        .action-btn.btn-reset:hover { background-color: #1abc9c; }
+
+        .action-btn.failed { background-color: #c0392b; cursor: not-allowed; }
+        
+        .level-info { margin-top: 5px; font-size: 0.9rem; color: #f1c40f; min-height: 20px; font-weight: bold;}
+
+        /* --- 5. 輸入框 --- */
+        .name-input {
+            padding: 15px; border-radius: 10px; border: none; font-size: 1.2rem;
+            width: 70%; text-align: center; margin-bottom: 20px; background: rgba(255,255,255,0.9);
+        }
+
+        /* --- 6. 彈窗與排行榜 --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 999;
+            display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(4px);
+            overflow-y: auto; 
+        }
+        .modal-content {
+            background: white; color: #333; padding: 25px; border-radius: 15px; 
+            width: 90%; max-width: 400px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-height: 95vh; overflow-y: auto;
+        }
+        .picker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .picker-item { border: 1px solid #ddd; border-radius: 8px; padding: 5px; cursor: pointer; }
+        .picker-item img { width: 100%; }
+
+        /* 排行榜 */
+        .leaderboard-box { margin-top: 20px; text-align: left; }
+        .lb-title { font-size: 1rem; color: #555; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; }
+        .lb-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .lb-table th { text-align: left; color: #888; padding: 5px; font-size: 0.8rem; }
+        .lb-table td { padding: 6px 5px; border-bottom: 1px solid #f0f0f0; }
+        .lb-rank { font-weight: bold; color: #27ae60; width: 25px; }
+        .lb-name { font-weight: bold; }
+        .lb-score { color: #e67e22; text-align: right; }
+        .lb-time { color: #7f8c8d; text-align: right; font-family: monospace; }
         .best-levels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .bl-item { background: #f9f9f9; padding: 6px; border-radius: 5px; font-size: 0.75rem; border: 1px solid #eee; text-align: left; }
+        .bl-item { background: #f9f9f9; padding: 5px; border-radius: 5px; font-size: 0.8rem; border: 1px solid #eee; }
+        .bl-lvl { font-weight: bold; color: #3498db; }
+
+        /* 開始畫面 */
+        #start-screen {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: #2c3e50; z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .intro-box { text-align: center; padding: 20px; width: 100%; box-sizing: border-box;}
+        .intro-title { font-size: 2.5rem; color: #f1c40f; margin-bottom: 10px; letter-spacing: 3px; }
+        .intro-desc { font-size: 1.1rem; color: #ecf0f1; margin-bottom: 30px; line-height: 1.8; }
+
     </style>
 </head>
 <body>
 
-    <div id="start-screen" class="modal-overlay" style="display: flex; background: #1a1a2e;">
-        <div class="modal-content" style="background: transparent; color: white;">
-            <h1 style="color:#f1c40f; font-size: 2.5rem; margin-bottom:10px;">🔮 色獨封印師</h1>
-            <p style="margin-bottom: 30px;">行列寶石相異，完成色獨封印</p>
-            <input type="text" id="player-name" style="padding:15px; border-radius:10px; width:80%; text-align:center; font-size:1.1rem; border:none;" placeholder="請輸入封印師名字">
-            <button class="action-btn" style="background:#27ae60; margin-top:20px; width:80%; height:50px; font-size:1.2rem;" onclick="startGame()">開始封印</button>
+    <div id="start-screen">
+        <div class="intro-box">
+            <div class="intro-title">🔮色獨封印師🔮</div>
+            <div class="intro-desc">
+                <strong>行列寶石相異，完成色獨封印</strong>
+            </div>
+            <input type="text" id="player-name" class="name-input" placeholder="請輸入封印師名號" maxlength="10">
+            <button class="action-btn" onclick="startGame()">開始挑戰</button>
         </div>
     </div>
 
-    <div class="header-box"><h1 id="game-title">等級 I</h1></div>
-
-    <div class="energy-container"><div id="energy-fill"></div></div>
+    <div class="header-box">
+        <h1 id="game-title">Round 1</h1>
+    </div>
     
     <div class="hud">
-        <div class="hud-item">等級 <span id="lvl-disp" class="hud-val">I</span></div>
-        <div class="hud-item">倒數 <span id="timer-disp" class="hud-val">00:00</span></div>
+        <div class="hud-item">關卡 <span id="round-disp" class="hud-val">1/6</span></div>
+        <div class="hud-item">倒數 <span id="timer-disp" class="hud-val">02:00</span></div>
         <div class="hud-item">得分 <span id="score-disp" class="hud-val">0</span></div>
     </div>
 
-    <div class="instruction-bar">
-        👆中間翻面 | 🔄邊緣旋轉 | 🗑️長按移除
+    <div class="time-bar-container">
+        <div id="time-bar-fill" class="time-bar-fill"></div>
     </div>
 
     <div class="game-container">
-        <div id="grid-container" class="main-grid"></div>
-        <div class="btn-row" id="control-btns">
-            <button class="action-btn btn-reset" onclick="resetMagicMatrix()">🔄 重置(還原魔法)</button>
-            <button class="action-btn btn-solve" id="btn-solve-text" onclick="forceSolve()">🏳️ 放棄(禁忌魔法)</button>
+        <div class="level-info" id="level-info">Level I (5分 + 速通5分)</div>
+        
+        <div class="instruction-bar">
+            👆輕點中間翻面 | 🔄輕點邊緣旋轉 | 🗑️長按中間移除
         </div>
-        <button id="btn-next" class="action-btn btn-next" onclick="nextLevel()">下一等級 ➡️</button>
-    </div>
 
-    <div id="end-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h2 id="end-title">🔮 封印結算</h2>
-            <div style="background:#f4f6f7; padding:15px; border-radius:10px;">
-                <div id="end-player-name" style="font-weight:bold; font-size:1.2rem;"></div>
-                <div style="margin:10px 0;">得分：<span id="end-score" style="color:#27ae60; font-weight:bold;">0</span> / 100</div>
-                <div style="margin:10px 0;">總耗時：<span id="end-time" style="color:#e67e22; font-weight:bold;">00:00</span></div>
-                <div id="end-msg" style="margin-top:10px; font-weight:bold; font-size:1.2rem;"></div>
-            </div>
-            
-            <div style="text-align:left; margin-top:20px;">
-                <div style="font-weight:bold; border-bottom:2px solid #eee; padding-bottom:5px;">🏆 封印師排行榜 (TOP 10)</div>
-                <table class="lb-table"><tbody id="lb-body"></tbody></table>
-            </div>
-
-            <div style="text-align:left; margin-top:20px;">
-                <div style="font-weight:bold; border-bottom:2px solid #eee; padding-bottom:5px;">⚡ 各級最速通關</div>
-                <div id="best-levels-grid" class="best-levels"></div>
-            </div>
-
-            <button class="action-btn" style="background:#27ae60; color:white; width:100%; margin-top:20px;" onclick="location.reload()">再玩一次</button>
+        <div id="grid-container" class="main-grid"></div>
+        
+        <button id="btn-next" class="action-btn" style="display:none;" onclick="nextLevel()">下一關 ➡️</button>
+        
+        <div id="action-controls" class="button-group">
+            <button id="btn-reset" class="action-btn btn-reset" onclick="resetLevel()">🔄 重置 (還原魔法)</button>
+            <button id="btn-solve" class="action-btn give-up" onclick="forceSolve(true)">🏳️ 放棄 (看解答)</button>
         </div>
     </div>
 
     <div id="picker-modal" class="modal-overlay" onclick="closePicker()">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h3>召喚魔石</h3>
-            <div id="picker-grid" style="display:grid; grid-template-columns: repeat(3,1fr); gap:10px;"></div>
-            <button onclick="closePicker()" style="margin-top:15px; padding:10px; width:100%;">取消</button>
+            <h3>選擇魔石</h3>
+            <div id="picker-grid" class="picker-grid"></div>
+            <button onclick="closePicker()" style="margin-top:15px; padding:10px 30px; background:#ddd; border:none; border-radius:20px;">取消</button>
+        </div>
+    </div>
+
+    <div id="end-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="end-title" style="margin:5px 0;">挑戰結束</h2>
+            
+            <div style="background:#f4f6f7; padding:10px; border-radius:10px; margin-bottom:15px;">
+                <div style="font-size:1.1rem; color:#2c3e50; font-weight:bold;" id="end-player-name"></div>
+                <div style="display:flex; justify-content:space-around; margin-top:5px;">
+                    <div>得分 <span id="end-score" style="color:#27ae60; font-weight:bold;">0 / 100</span></div>
+                    <div>總耗時 <span id="end-time" style="color:#e67e22; font-weight:bold;">00:00</span></div>
+                </div>
+                <div id="end-msg" style="margin-top:5px; font-size:0.9rem; color:#555;"></div>
+            </div>
+
+            <div class="leaderboard-box">
+                <div class="lb-title">🏆 封印師排行榜 (TOP 10)</div>
+                <table class="lb-table">
+                    <thead><tr><th>#</th><th>名字</th><th>分</th><th>時</th></tr></thead>
+                    <tbody id="lb-body"></tbody>
+                </table>
+            </div>
+
+            <div class="leaderboard-box">
+                <div class="lb-title">⚡ 各級最速傳說</div>
+                <div id="best-levels-grid" class="best-levels"></div>
+            </div>
+
+            <button class="action-btn" style="margin-top:20px; padding:10px 30px;" onclick="location.reload()">再玩一次</button>
         </div>
     </div>
 
     <script>
-        // --- 完整資料庫 ---
+        // --- 0. 音效系統 ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'action') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                gainNode.gain.setValueAtTime(0.1, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'line') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(1200, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
+                gainNode.gain.setValueAtTime(0.1, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'win') {
+                playNote(523.25, now, 0.1); playNote(659.25, now + 0.1, 0.1); playNote(783.99, now + 0.2, 0.4); 
+            } else if (type === 'bonus') {
+                playNote(880, now, 0.1); playNote(1760, now + 0.1, 0.2); 
+            } else if (type === 'reset') {
+                // 重置音效
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.2);
+                gainNode.gain.setValueAtTime(0.1, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            }
+        }
+        function playNote(freq, time, dur) {
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'square'; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.1, time); gain.gain.exponentialRampToValueAtTime(0.01, time + dur);
+            osc.start(time); osc.stop(time + dur);
+        }
+
+        // --- 1. 資料庫 ---
         const BLOCKS = {
             1: { B: [[1,2],[3,4]], W: [[4,3],[6,5]] },
             2: { B: [[3,4],[5,6]], W: [[6,5],[2,1]] },
@@ -164,340 +422,646 @@
             8: { B: [[6,1],[2,3]], W: [[3,2],[5,4]] },
             9: { B: [[2,3],[4,5]], W: [[5,4],[1,6]] }
         };
-
-        const SHAPES = [
-            { level: 1, active: [2,3,4,7,9], targets: [2,4,9] }, { level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
-            { level: 1, active: [1,3,5,8,9], targets: [1,5,9] }, { level: 1, active: [1,3,4,8,9], targets: [3,4,8] },
-            { level: 1, active: [1,2,4,6,8], targets: [1,6,8] }, { level: 1, active: [1,3,5,7,8], targets: [3,5,7] },
-            { level: 2, active: [2,4,5,8,9], targets: [2,4,9] }, { level: 2, active: [2,6,7,8,9], targets: [2,6,7] },
-            { level: 2, active: [1,2,5,8,9], targets: [1,5,9] }, { level: 2, active: [2,3,4,5,8], targets: [3,4,8] },
-            { level: 2, active: [1,2,3,6,8], targets: [1,6,8] }, { level: 2, active: [2,3,5,7,8], targets: [3,5,7] },
-            { level: 3, active: [2,4,6,7,8,9], targets: [2,4,9] }, { level: 3, active: [2,4,5,6,7,9], targets: [2,6,7] },
-            { level: 3, active: [1,3,5,7,8,9], targets: [1,5,9] }, { level: 3, active: [2,3,4,6,8,9], targets: [3,4,8] },
-            { level: 3, active: [1,2,5,6,7,8], targets: [1,6,8] }, { level: 3, active: [1,3,5,6,7,9], targets: [3,5,7] },
-            { level: 4, active: [2,4,5,6,8,9], targets: [2,4,9] }, { level: 4, active: [2,5,6,7,8,9], targets: [2,6,7] },
-            { level: 4, active: [1,2,3,5,6,9], targets: [1,5,9] }, { level: 4, active: [2,3,4,5,6,8], targets: [3,4,8] },
-            { level: 4, active: [1,2,3,5,6,8], targets: [1,6,8] }, { level: 4, active: [1,2,3,4,5,7], targets: [3,5,7] },
-            { level: 5, active: [1,2,4,5,6,8,9], targets: [2,4,9] }, { level: 5, active: [1,2,4,6,7,8,9], targets: [2,6,7] },
-            { level: 5, active: [1,3,5,6,7,8,9], targets: [1,5,9] }, { level: 5, active: [2,3,4,5,6,7,8], targets: [3,4,8] },
-            { level: 5, active: [1,2,3,4,6,8,9], targets: [1,6,8] }, { level: 5, active: [1,3,4,5,7,8,9], targets: [3,5,7] },
-            { level: 6, active: [1,2,3,4,6,7,9], targets: [2,4,9] }, { level: 6, active: [2,4,5,6,7,8,9], targets: [2,6,7] },
-            { level: 6, active: [1,3,4,5,6,7,9], targets: [1,5,9] }, { level: 6, active: [1,2,3,4,7,8,9], targets: [3,4,8] },
-            { level: 6, active: [1,2,4,5,6,7,8], targets: [1,6,8] }, { level: 6, active: [1,2,3,5,7,8,9], targets: [3,5,7] }
-        ];
-
         const TARGET_TILES = [
-            { blocks: [{id:1, f:'B'}, {id:5, f:'B'}, {id:8, f:'W'}] }, { blocks: [{id:2, f:'B'}, {id:9, f:'B'}, {id:6, f:'W'}] },
-            { blocks: [{id:6, f:'B'}, {id:1, f:'W'}, {id:7, f:'B'}] }, { blocks: [{id:9, f:'W'}, {id:3, f:'B'}, {id:4, f:'W'}] },
-            { blocks: [{id:2, f:'W'}, {id:7, f:'W'}, {id:4, f:'B'}] }, { blocks: [{id:5, f:'W'}, {id:3, f:'W'}, {id:8, f:'B'}] },
-            { blocks: [{id:5, f:'B'}, {id:3, f:'B'}, {id:9, f:'W'}] }, { blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:8, f:'B'}] },
-            { blocks: [{id:4, f:'B'}, {id:8, f:'B'}, {id:2, f:'W'}] }, { blocks: [{id:3, f:'B'}, {id:6, f:'W'}, {id:7, f:'W'}] },
-            { blocks: [{id:9, f:'W'}, {id:6, f:'B'}, {id:1, f:'W'}] }, { blocks: [{id:4, f:'W'}, {id:2, f:'W'}, {id:7, f:'B'}] },
-            { blocks: [{id:3, f:'B'}, {id:4, f:'B'}, {id:7, f:'W'}] }, { blocks: [{id:9, f:'B'}, {id:4, f:'W'}, {id:1, f:'B'}] },
-            { blocks: [{id:7, f:'B'}, {id:5, f:'B'}, {id:2, f:'W'}] }, { blocks: [{id:6, f:'W'}, {id:8, f:'W'}, {id:2, f:'B'}] },
-            { blocks: [{id:5, f:'B'}, {id:8, f:'W'}, {id:3, f:'W'}] }, { blocks: [{id:1, f:'W'}, {id:9, f:'B'}, {id:6, f:'W'}] },
-            { blocks: [{id:2, f:'B'}, {id:6, f:'B'}, {id:9, f:'W'}] }, { blocks: [{id:7, f:'B'}, {id:4, f:'W'}, {id:3, f:'B'}] },
-            { blocks: [{id:9, f:'B'}, {id:4, f:'B'}, {id:1, f:'W'}] }, { blocks: [{id:1, f:'B'}, {id:8, f:'W'}, {id:4, f:'W'}] },
-            { blocks: [{id:9, f:'W'}, {id:5, f:'B'}, {id:2, f:'W'}] }, { blocks: [{id:8, f:'B'}, {id:6, f:'W'}, {id:2, f:'W'}] },
-            { blocks: [{id:1, f:'B'}, {id:6, f:'B'}, {id:7, f:'W'}] }, { blocks: [{id:3, f:'B'}, {id:8, f:'B'}, {id:6, f:'W'}] },
-            { blocks: [{id:5, f:'B'}, {id:9, f:'B'}, {id:3, f:'W'}] }, { blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:7, f:'W'}] },
-            { blocks: [{id:8, f:'W'}, {id:4, f:'B'}, {id:1, f:'W'}] }, { blocks: [{id:3, f:'W'}, {id:4, f:'W'}, {id:9, f:'B'}] },
-            { blocks: [{id:4, f:'B'}, {id:2, f:'B'}, {id:8, f:'W'}] }, { blocks: [{id:2, f:'B'}, {id:5, f:'W'}, {id:7, f:'B'}] },
-            { blocks: [{id:8, f:'B'}, {id:6, f:'B'}, {id:3, f:'W'}] }, { blocks: [{id:5, f:'W'}, {id:2, f:'B'}, {id:9, f:'W'}] },
-            { blocks: [{id:3, f:'W'}, {id:7, f:'W'}, {id:6, f:'B'}] }, { blocks: [{id:7, f:'B'}, {id:5, f:'W'}, {id:1, f:'W'}] }
+            { id: 1,  blocks: [{id:1, f:'B'}, {id:5, f:'B'}, {id:8, f:'W'}] },
+            { id: 2,  blocks: [{id:2, f:'B'}, {id:9, f:'B'}, {id:6, f:'W'}] },
+            { id: 3,  blocks: [{id:6, f:'B'}, {id:1, f:'W'}, {id:7, f:'B'}] },
+            { id: 4,  blocks: [{id:9, f:'W'}, {id:3, f:'B'}, {id:4, f:'W'}] },
+            { id: 5,  blocks: [{id:2, f:'W'}, {id:7, f:'W'}, {id:4, f:'B'}] },
+            { id: 6,  blocks: [{id:5, f:'W'}, {id:3, f:'W'}, {id:8, f:'B'}] },
+            { id: 7,  blocks: [{id:5, f:'B'}, {id:3, f:'B'}, {id:9, f:'W'}] },
+            { id: 8,  blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:8, f:'B'}] },
+            { id: 9,  blocks: [{id:4, f:'B'}, {id:8, f:'B'}, {id:2, f:'W'}] },
+            { id: 10, blocks: [{id:3, f:'B'}, {id:6, f:'W'}, {id:7, f:'W'}] },
+            { id: 11, blocks: [{id:9, f:'W'}, {id:6, f:'B'}, {id:1, f:'W'}] },
+            { id: 12, blocks: [{id:4, f:'W'}, {id:2, f:'W'}, {id:7, f:'B'}] },
+            { id: 13, blocks: [{id:3, f:'B'}, {id:4, f:'B'}, {id:7, f:'W'}] },
+            { id: 14, blocks: [{id:9, f:'B'}, {id:4, f:'W'}, {id:1, f:'B'}] },
+            { id: 15, blocks: [{id:7, f:'B'}, {id:5, f:'B'}, {id:2, f:'W'}] },
+            { id: 16, blocks: [{id:6, f:'W'}, {id:8, f:'W'}, {id:2, f:'B'}] },
+            { id: 17, blocks: [{id:5, f:'B'}, {id:8, f:'W'}, {id:3, f:'W'}] },
+            { id: 18, blocks: [{id:1, f:'W'}, {id:9, f:'B'}, {id:6, f:'W'}] },
+            { id: 19, blocks: [{id:2, f:'B'}, {id:6, f:'B'}, {id:9, f:'W'}] },
+            { id: 20, blocks: [{id:7, f:'B'}, {id:4, f:'W'}, {id:3, f:'B'}] },
+            { id: 21, blocks: [{id:9, f:'B'}, {id:4, f:'B'}, {id:1, f:'W'}] },
+            { id: 22, blocks: [{id:1, f:'B'}, {id:8, f:'W'}, {id:4, f:'W'}] },
+            { id: 23, blocks: [{id:9, f:'W'}, {id:5, f:'B'}, {id:2, f:'W'}] },
+            { id: 24, blocks: [{id:8, f:'B'}, {id:6, f:'W'}, {id:2, f:'W'}] },
+            { id: 25, blocks: [{id:1, f:'B'}, {id:6, f:'B'}, {id:7, f:'W'}] },
+            { id: 26, blocks: [{id:3, f:'B'}, {id:8, f:'B'}, {id:6, f:'W'}] },
+            { id: 27, blocks: [{id:5, f:'B'}, {id:9, f:'B'}, {id:3, f:'W'}] },
+            { id: 28, blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:7, f:'W'}] },
+            { id: 29, blocks: [{id:8, f:'W'}, {id:4, f:'B'}, {id:1, f:'W'}] },
+            { id: 30, blocks: [{id:3, f:'W'}, {id:4, f:'W'}, {id:9, f:'B'}] },
+            { id: 31, blocks: [{id:4, f:'B'}, {id:2, f:'B'}, {id:8, f:'W'}] },
+            { id: 32, blocks: [{id:2, f:'B'}, {id:5, f:'W'}, {id:7, f:'B'}] },
+            { id: 33, blocks: [{id:8, f:'B'}, {id:6, f:'B'}, {id:3, f:'W'}] },
+            { id: 34, blocks: [{id:5, f:'W'}, {id:2, f:'B'}, {id:9, f:'W'}] },
+            { id: 35, blocks: [{id:3, f:'W'}, {id:7, f:'W'}, {id:6, f:'B'}] },
+            { id: 36, blocks: [{id:7, f:'B'}, {id:5, f:'W'}, {id:1, f:'W'}] }
         ];
-
-        const LEVEL_SETTINGS = {
-            1: { title: "I", time: 120, base: 12, bonus: 1 }, 2: { title: "II", time: 180, base: 12, bonus: 2 },
-            3: { title: "III", time: 240, base: 13, bonus: 3 }, 4: { title: "IV", time: 300, base: 13, bonus: 4 },
-            5: { title: "V", time: 360, base: 14, bonus: 5 }, 6: { title: "VI", time: 420, base: 14, bonus: 6 }
+        const SHAPES = [
+            { id: 1, name: "No.001", level: 1, active: [2,3,4,7,9], targets: [2,4,9] },
+            { id: 2, name: "No.002", level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
+            { id: 3, name: "No.003", level: 1, active: [1,3,5,8,9], targets: [1,5,9] },
+            { id: 4, name: "No.004", level: 1, active: [1,3,4,8,9], targets: [3,4,8] },
+            { id: 5, name: "No.005", level: 1, active: [1,2,4,6,8], targets: [1,6,8] },
+            { id: 6, name: "No.006", level: 1, active: [1,3,5,7,8], targets: [3,5,7] },
+            { id: 7, name: "No.007", level: 2, active: [2,4,5,8,9], targets: [2,4,9] },
+            { id: 8, name: "No.008", level: 2, active: [2,6,7,8,9], targets: [2,6,7] },
+            { id: 9, name: "No.009", level: 2, active: [1,2,5,8,9], targets: [1,5,9] },
+            { id: 10, name: "No.010", level: 2, active: [2,3,4,5,8], targets: [3,4,8] },
+            { id: 11, name: "No.011", level: 2, active: [1,2,3,6,8], targets: [1,6,8] },
+            { id: 12, name: "No.012", level: 2, active: [2,3,5,7,8], targets: [3,5,7] },
+            { id: 13, name: "No.013", level: 3, active: [2,4,6,7,8,9], targets: [2,4,9] },
+            { id: 14, name: "No.014", level: 3, active: [2,4,5,6,7,9], targets: [2,6,7] },
+            { id: 15, name: "No.015", level: 3, active: [1,3,5,7,8,9], targets: [1,5,9] },
+            { id: 16, name: "No.016", level: 3, active: [2,3,4,6,8,9], targets: [3,4,8] },
+            { id: 17, name: "No.017", level: 3, active: [1,2,5,6,7,8], targets: [1,6,8] },
+            { id: 18, name: "No.018", level: 3, active: [1,3,5,6,7,9], targets: [3,5,7] },
+            { id: 19, name: "No.019", level: 4, active: [2,4,5,6,8,9], targets: [2,4,9] },
+            { id: 20, name: "No.020", level: 4, active: [2,5,6,7,8,9], targets: [2,6,7] },
+            { id: 21, name: "No.021", level: 4, active: [1,2,3,5,6,9], targets: [1,5,9] },
+            { id: 22, name: "No.022", level: 4, active: [2,3,4,5,6,8], targets: [3,4,8] },
+            { id: 23, name: "No.023", level: 4, active: [1,2,3,5,6,8], targets: [1,6,8] },
+            { id: 24, name: "No.024", level: 4, active: [1,2,3,4,5,7], targets: [3,5,7] },
+            { id: 25, name: "No.025", level: 5, active: [1,2,4,5,6,8,9], targets: [2,4,9] },
+            { id: 26, name: "No.026", level: 5, active: [1,2,4,6,7,8,9], targets: [2,6,7] },
+            { id: 27, name: "No.027", level: 5, active: [1,3,5,6,7,8,9], targets: [1,5,9] },
+            { id: 28, name: "No.028", level: 5, active: [2,3,4,5,6,7,8], targets: [3,4,8] },
+            { id: 29, name: "No.029", level: 5, active: [1,2,3,4,6,8,9], targets: [1,6,8] },
+            { id: 30, name: "No.030", level: 5, active: [1,3,4,5,7,8,9], targets: [3,5,7] },
+            { id: 31, name: "No.031", level: 6, active: [1,2,3,4,6,7,9], targets: [2,4,9] },
+            { id: 32, name: "No.032", level: 6, active: [2,4,5,6,7,8,9], targets: [2,6,7] },
+            { id: 33, name: "No.033", level: 6, active: [1,3,4,5,6,7,9], targets: [1,5,9] },
+            { id: 34, name: "No.034", level: 6, active: [1,2,3,4,7,8,9], targets: [3,4,8] },
+            { id: 35, name: "No.035", level: 6, active: [1,2,4,5,6,7,8], targets: [1,6,8] },
+            { id: 36, name: "No.036", level: 6, active: [1,2,3,5,7,8,9], targets: [3,5,7] }
+        ];
+        const LEVEL_CONFIG = {
+            1: { time: 120, base: 12, bonus: 1 },
+            2: { time: 180, base: 12, bonus: 2 },
+            3: { time: 240, base: 13, bonus: 3 },
+            4: { time: 300, base: 13, bonus: 4 },
+            5: { time: 360, base: 14, bonus: 5 },
+            6: { time: 420, base: 14, bonus: 6 }
         };
 
         // --- 變數 ---
-        let currentLevel = 1, totalScore = 0, totalTimeSpent = 0, timeLeft = 0;
-        let roundStartTime = 0, timerInterval, userBoard = Array(9).fill(null);
-        let currentLayout = { active: [], fixed: [] }, playerName = "", isWon = false, solverUsed = false, longPressTimer;
+        let playerName = "";
+        let currentRound = 1;
+        let totalScore = 0;
+        let totalTimeSpent = 0; 
+        let roundStartTime = 0; 
+        let currentLayoutConfig = {};
+        let userBoard = Array(9).fill(null);
+        let pickingSlot = -1;
+        let isRoundWon = false;
+        let isSolverUsed = false;
+        let timerInterval;
+        let timeLeft = 0;
+        let currentTotalTime = 0; // 新增：保存該關卡總時間
+        let lastValidLineCount = 0;
+        let longPressTimer;
 
+        // --- 核心流程 ---
         function startGame() {
-            playerName = document.getElementById('player-name').value.trim();
-            if(!playerName) return alert("請輸入名號！");
+            const nameInput = document.getElementById('player-name').value.trim();
+            if (!nameInput) { alert("如何稱呼您！"); return; }
+            playerName = nameInput;
             document.getElementById('start-screen').style.display = 'none';
-            loadLevel();
+            currentRound = 1;
+            totalScore = 0;
+            totalTimeSpent = 0;
+            updateHUD();
+            loadRound(currentRound);
         }
 
-        function loadLevel() {
-            isWon = false; solverUsed = false;
-            const config = LEVEL_SETTINGS[currentLevel];
-            timeLeft = config.time; roundStartTime = Date.now();
-            document.getElementById('lvl-disp').innerText = config.title;
-            document.getElementById('game-title').innerText = `等級 ${config.title}`;
+        function loadRound(round) {
+            isRoundWon = false;
+            isSolverUsed = false;
+            lastValidLineCount = 0;
+            
+            document.getElementById('game-title').innerText = `Round ${round}`;
             document.getElementById('btn-next').style.display = 'none';
-            document.getElementById('control-btns').style.display = 'flex';
+            
+            // 顯示重置與放棄按鈕
+            document.getElementById('action-controls').style.display = 'flex';
+            document.getElementById('btn-solve').style.display = 'block';
+            document.getElementById('btn-reset').style.display = 'block';
+            document.getElementById('btn-solve').disabled = false;
+            document.getElementById('btn-solve').innerText = "🏳️ 放棄 (禁忌魔法)";
+            document.getElementById('btn-solve').className = "action-btn give-up"; 
+            document.getElementById('btn-reset').disabled = false;
+            
             document.getElementById('grid-container').classList.remove('win-glow');
+            document.getElementById('timer-disp').classList.remove('urgent');
 
-            const possibleShapes = SHAPES.filter(s => s.level === currentLevel);
-            const selectedShape = possibleShapes[Math.floor(Math.random() * possibleShapes.length)];
-            const selectedTile = TARGET_TILES[Math.floor(Math.random() * TARGET_TILES.length)];
+            const config = LEVEL_CONFIG[round];
+            startTimer(config.time);
+            roundStartTime = Date.now();
 
+            let solvable = false;
+            let attempts = 0;
+            let selectedShape, selectedTile;
+            const levelShapes = SHAPES.filter(s => s.level === round);
+            const levelTiles = TARGET_TILES;
+
+            while (!solvable && attempts < 50) {
+                selectedShape = levelShapes[Math.floor(Math.random() * levelShapes.length)];
+                selectedTile = levelTiles[Math.floor(Math.random() * levelTiles.length)];
+                currentLayoutConfig = {};
+                for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
+                selectedShape.active.forEach(pos => { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; });
+                selectedShape.targets.forEach((pos, idx) => {
+                    if (idx < selectedTile.blocks.length) {
+                        const b = selectedTile.blocks[idx];
+                        currentLayoutConfig[pos-1] = { type: 'FIXED', id: b.id, face: b.f };
+                    } else {
+                        currentLayoutConfig[pos-1] = { type: 'SOLVE' };
+                    }
+                });
+                if (checkSolvability()) solvable = true;
+                attempts++;
+            }
+            if (!solvable) { alert("生成失敗"); return; }
+
+            document.getElementById('level-info').innerText = `${selectedShape.name} (通關${config.base}分 + 速通${config.bonus}分)`;
+            document.getElementById('level-info').style.color = "#f1c40f"; 
+            
             userBoard = Array(9).fill(null);
-            currentLayout.active = selectedShape.active;
-            currentLayout.fixed = [];
-            selectedShape.targets.forEach((pos, idx) => {
-                const bData = selectedTile.blocks[idx];
-                const b = { id: bData.id, face: bData.f, rot: 0, isFixed: true };
-                userBoard[pos-1] = b;
-                currentLayout.fixed.push({ pos: pos-1, ...b });
-            });
-            renderGrid();
-            startTimer();
+            for(let i=0; i<9; i++) {
+                if (currentLayoutConfig[i].type === 'FIXED') {
+                    userBoard[i] = { id: currentLayoutConfig[i].id, face: currentLayoutConfig[i].face, rot: 0, isFixed: true };
+                }
+            }
+            renderGameGrid();
         }
 
-        function startTimer() {
-            clearInterval(timerInterval); updateTimerUI();
+        // 修改：計時器邏輯包含視覺時間條
+        function startTimer(seconds) {
+            clearInterval(timerInterval);
+            timeLeft = seconds;
+            currentTotalTime = seconds; // 記錄總時長
+            updateTimerDisplay();
+            updateTimeBar(); // 初始化時間條
+
             timerInterval = setInterval(() => {
-                timeLeft--; updateTimerUI();
-                if(timeLeft <= 0) { clearInterval(timerInterval); alert("能量耗盡！"); finishRound(false); }
+                timeLeft--;
+                updateTimerDisplay();
+                updateTimeBar();
+
+                if (timeLeft <= 10) document.getElementById('timer-disp').classList.add('urgent');
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeOut();
+                }
             }, 1000);
         }
 
-        function updateTimerUI() {
-            const config = LEVEL_SETTINGS[currentLevel];
-            const m = Math.floor(timeLeft/60).toString().padStart(2,'0'), s = (timeLeft%60).toString().padStart(2,'0');
+        function updateTimerDisplay() {
+            const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
             document.getElementById('timer-disp').innerText = `${m}:${s}`;
-            const fill = document.getElementById('energy-fill');
-            fill.style.width = (timeLeft/config.time * 100) + "%";
-            const elapsed = Math.floor((Date.now() - roundStartTime)/1000);
-            fill.className = "";
-            if(elapsed <= 60) fill.classList.add('energy-purple');
-            else if(timeLeft <= 60) fill.classList.add('energy-red');
-            else fill.classList.add('energy-blue');
         }
 
-        function resetMagicMatrix() {
-            if(isWon) return;
-            userBoard = Array(9).fill(null);
-            currentLayout.fixed.forEach(item => { userBoard[item.pos] = { id: item.id, face: item.face, rot: item.rot, isFixed: true }; });
-            renderGrid();
-        }
+        // 新增：更新時間條顏色與寬度
+        function updateTimeBar() {
+            const bar = document.getElementById('time-bar-fill');
+            const elapsed = currentTotalTime - timeLeft;
+            const pct = (timeLeft / currentTotalTime) * 100;
+            
+            bar.style.width = `${pct}%`;
 
-        function getRotatedMatrix(matrix, times) {
-            let m = JSON.parse(JSON.stringify(matrix));
-            for(let t=0; t<times; t++) {
-                const newM = [[0,0],[0,0]];
-                newM[0][1] = m[0][0]; newM[1][1] = m[0][1]; newM[1][0] = m[1][1]; newM[0][0] = m[1][0];
-                m = newM;
-            } return m;
-        }
+            // 移除所有狀態
+            bar.classList.remove('state-purple', 'state-blue', 'state-red');
 
-        function get6x6Grid(board) {
-            let grid = Array(6).fill().map(()=>Array(6).fill(0));
-            board.forEach((b, i) => {
-                if(!b) return;
-                let br = Math.floor(i/3)*2, bc = (i%3)*2;
-                let m = getRotatedMatrix(BLOCKS[b.id][b.face], b.rot);
-                grid[br][bc] = m[0][0]; grid[br][bc+1] = m[0][1];
-                grid[br+1][bc] = m[1][0]; grid[br+1][bc+1] = m[1][1];
-            });
-            return grid;
-        }
-
-        function isLineValid(grid, idx, isRow) {
-            let seen = new Set();
-            for(let i=0; i<6; i++) {
-                let v = isRow ? grid[idx][i] : grid[i][idx];
-                if(v === 0) return false;
-                if(seen.has(v)) return false;
-                seen.add(v);
-            }
-            return true;
-        }
-
-        function updateGlows() {
-            const container = document.getElementById('grid-container');
-            let existingGlow = container.querySelector('.glow-overlay');
-            if(existingGlow) existingGlow.remove();
-
-            const glowLayer = document.createElement('div');
-            glowLayer.className = 'glow-overlay';
-            container.appendChild(glowLayer);
-
-            const grid = get6x6Grid(userBoard);
-            for(let r=0; r<3; r++) {
-                if(isLineValid(grid, r*2, true) && isLineValid(grid, r*2+1, true)) {
-                    const glow = document.createElement('div');
-                    glow.className = 'glow-bar glow-row';
-                    glow.style.top = (r*33.33 + 0.5) + '%';
-                    glowLayer.appendChild(glow);
-                }
-            }
-            for(let c=0; c<3; c++) {
-                if(isLineValid(grid, c*2, false) && isLineValid(grid, c*2+1, false)) {
-                    const glow = document.createElement('div');
-                    glow.className = 'glow-bar glow-col';
-                    glow.style.left = (c*33.33 + 0.5) + '%';
-                    glowLayer.appendChild(glow);
-                }
+            if (elapsed < 60) {
+                // 開始60秒內：紫色增幅
+                bar.classList.add('state-purple');
+            } else if (timeLeft <= 60) {
+                // 最後60秒：紅色不穩定
+                bar.classList.add('state-red');
+            } else {
+                // 中間段：藍色穩定
+                bar.classList.add('state-blue');
             }
         }
 
-        function renderGrid() {
-            const container = document.getElementById('grid-container');
-            container.innerHTML = "";
-            const shape = currentLayout.active;
-            for(let i=0; i<9; i++) {
-                const div = document.createElement('div');
-                div.className = 'block';
-                if (!shape.includes(i+1)) {
-                    div.style.visibility = "hidden";
-                } else if (userBoard[i]) {
-                    const b = userBoard[i];
-                    div.classList.add(b.isFixed ? 'fixed' : 'user-placed');
-                    div.innerHTML = `<img src="images/block_${b.id}_${b.face}.png" class="block-image" style="transform:rotate(${b.rot*90}deg)">`;
-                    const edge = document.createElement('div'); edge.className = 'zone-edge';
-                    edge.onclick = () => { if(!isWon) { b.rot = (b.rot+1)%4; renderGrid(); } };
-                    div.appendChild(edge);
-                    if(!b.isFixed) {
-                        const center = document.createElement('div'); center.className = 'zone-center';
-                        center.onclick = (e) => { e.stopPropagation(); if(!isWon) { b.face = (b.face==='B'?'W':'B'); renderGrid(); } };
-                        const clearB = () => { userBoard[i] = null; renderGrid(); };
-                        center.onmousedown = () => { longPressTimer = setTimeout(clearB, 600); };
-                        center.ontouchstart = () => { longPressTimer = setTimeout(clearB, 600); };
-                        center.onmouseup = () => clearTimeout(longPressTimer);
-                        center.ontouchend = () => clearTimeout(longPressTimer);
-                        div.appendChild(center);
-                    }
-                } else { div.className += ' empty-slot'; div.innerText = "+"; div.onclick = () => openPicker(i); }
-                container.appendChild(div);
-            }
-            updateGlows();
-            if(shape.every(p => userBoard[p-1] !== null)) checkWin();
+        function handleTimeOut() {
+            if (isRoundWon) return;
+            calculateTimeSpent();
+            forceSolve(false);
+            document.getElementById('btn-solve').innerText = "⌛ 挑戰失敗";
+            document.getElementById('btn-solve').className = "action-btn failed";
+            document.getElementById('btn-reset').style.display = 'none'; // 失敗後隱藏重置
+            document.getElementById('level-info').innerText = "時間耗盡，本關不計分";
+            document.getElementById('level-info').style.color = "#e74c3c";
         }
 
-        function checkWin() {
-            const grid = get6x6Grid(userBoard);
-            for(let i=0; i<6; i++) {
-                if(!isLineValid(grid, i, true) || !isLineValid(grid, i, false)) return;
-            }
-            finishRound(true);
-        }
-
-        function finishRound(success) {
-            isWon = true; clearInterval(timerInterval);
-            const spent = Math.floor((Date.now() - roundStartTime)/1000);
-            totalTimeSpent += spent;
-            if(success && !solverUsed) {
-                const config = LEVEL_SETTINGS[currentLevel];
-                let s = config.base; if(spent <= 60) s += config.bonus;
-                totalScore += s;
-                updateLevelBest(currentLevel, spent);
-            }
-            document.getElementById('score-disp').innerText = totalScore;
-            document.getElementById('grid-container').classList.add('win-glow');
-            document.getElementById('control-btns').style.display = 'none';
-            document.getElementById('btn-next').style.display = 'block';
-        }
-
-        function forceSolve() {
-            solverUsed = true;
-            let board = JSON.parse(JSON.stringify(userBoard));
+        function checkSolvability() {
+            let solverBoard = Array(9).fill(null);
             let usedIDs = new Set();
-            board.forEach(b => { if(b) usedIDs.add(b.id); });
-
-            if(solveRecursive(0, board, usedIDs)) {
-                userBoard = board; renderGrid();
-                alert("使用禁忌魔法，本關不計分。"); finishRound(true);
-            } else { alert("此關無解"); }
+            for(let i=0; i<9; i++) {
+                if (currentLayoutConfig[i].type === 'FIXED') usedIDs.add(currentLayoutConfig[i].id);
+            }
+            return solveStep(0, solverBoard, usedIDs, true);
         }
 
-        function solveRecursive(idx, board, usedIDs) {
-            if(idx >= 9) return true;
-            if(!currentLayout.active.includes(idx+1)) return solveRecursive(idx+1, board, usedIDs);
-            if(board[idx] && board[idx].isFixed) return solveRecursive(idx+1, board, usedIDs);
+        function calculateTimeSpent() {
+            let spent = Math.floor((Date.now() - roundStartTime) / 1000);
+            totalTimeSpent += spent;
+            if (isRoundWon && !isSolverUsed) updateLevelBest(currentRound, spent);
+            return spent;
+        }
 
-            for(let id=1; id<=9; id++) {
-                if(usedIDs.has(id)) continue;
-                usedIDs.add(id);
-                for(let face of ['B','W']) {
-                    for(let rot=0; rot<4; rot++) {
-                        board[idx] = { id, face, rot, isFixed: false };
-                        if(isValidPartially(board)) { if(solveRecursive(idx+1, board, usedIDs)) return true; }
-                    }
+        function nextLevel() {
+            clearInterval(timerInterval);
+            const spent = calculateTimeSpent(); 
+            if (!isSolverUsed) {
+                const config = LEVEL_CONFIG[currentRound];
+                let roundScore = config.base;
+                if (spent <= 60) roundScore += config.bonus;
+                totalScore += roundScore;
+            }
+            updateHUD();
+            currentRound++;
+            if (currentRound > 6) showEndScreen();
+            else loadRound(currentRound);
+        }
+
+        function updateHUD() {
+            document.getElementById('round-disp').innerText = `${currentRound} / 6`;
+            document.getElementById('score-disp').innerText = totalScore;
+        }
+
+        // --- 新增：重置功能 ---
+        function resetLevel() {
+            if (isRoundWon || isSolverUsed) return;
+            
+            // 播放音效
+            playSound('reset');
+
+            for (let i = 0; i < 9; i++) {
+                if (currentLayoutConfig[i].type === 'FIXED') {
+                    // 回復目標方塊到原始狀態 (rot=0)
+                    userBoard[i].rot = 0;
+                    userBoard[i].face = currentLayoutConfig[i].face; // 確保面也回復
+                } else {
+                    // 清除玩家放置的方塊
+                    userBoard[i] = null;
                 }
-                board[idx] = null; usedIDs.delete(id);
             }
-            return false;
+            // 重新渲染並計算光暈
+            renderGameGrid();
+            // 重置光暈計數器，讓音效感覺重新開始
+            lastValidLineCount = 0;
         }
 
-        function isValidPartially(board) {
-            let grid = get6x6Grid(board);
-            for(let i=0; i<6; i++) {
-                let rS = new Set(), cS = new Set();
-                for(let j=0; j<6; j++) {
-                    let rv = grid[i][j], cv = grid[j][i];
-                    if(rv!==0){ if(rS.has(rv)) return false; rS.add(rv); }
-                    if(cv!==0){ if(cS.has(cv)) return false; cS.add(cv); }
-                }
-            }
-            return true;
+        // --- 排行榜 ---
+        function saveRecord() {
+            const record = { name: playerName, score: totalScore, time: totalTimeSpent, date: Date.now() };
+            let lb = JSON.parse(localStorage.getItem('coludoku_lb_v3') || "[]");
+            lb.push(record);
+            lb.sort((a,b) => b.score - a.score || a.time - b.time);
+            lb = lb.slice(0, 10);
+            localStorage.setItem('coludoku_lb_v3', JSON.stringify(lb));
+            return lb;
         }
 
-        function openPicker(i) {
-            const grid = document.getElementById('picker-grid'); grid.innerHTML = "";
-            const used = userBoard.filter(b => b).map(b => b.id);
-            for(let id=1; id<=9; id++) {
-                if(used.includes(id)) continue;
-                const item = document.createElement('div');
-                item.style.border="1px solid #ddd";
-                item.innerHTML = `<img src="images/block_${id}_B.png" style="width:100%">`;
-                item.onclick = () => { userBoard[i] = { id, face: 'B', rot: 0, isFixed: false }; closePicker(); renderGrid(); };
-                grid.appendChild(item);
+        function updateLevelBest(level, time) {
+            let bests = JSON.parse(localStorage.getItem('coludoku_best_v3') || "{}");
+            if (!bests[level] || time < bests[level].time) {
+                bests[level] = { name: playerName, time: time };
+                localStorage.setItem('coludoku_best_v3', JSON.stringify(bests));
             }
-            document.getElementById('picker-modal').style.display = 'flex';
         }
 
-        function closePicker() { document.getElementById('picker-modal').style.display = 'none'; }
-        function nextLevel() { if(currentLevel < 6) { currentLevel++; loadLevel(); } else showEndScreen(); }
-
-        // --- 排行與統計 ---
-        function updateLevelBest(lvl, t) {
-            let b = JSON.parse(localStorage.getItem('coludoku_best_v3')||"{}");
-            if(!b[lvl] || t < b[lvl].time) {
-                b[lvl] = { name: playerName, time: t };
-                localStorage.setItem('coludoku_best_v3', JSON.stringify(b));
-            }
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60).toString().padStart(2,'0');
+            const s = (sec % 60).toString().padStart(2,'0');
+            return `${m}:${s}`;
         }
 
         function showEndScreen() {
             document.getElementById('end-modal').style.display = 'flex';
             document.getElementById('end-player-name').innerText = `封印師：${playerName}`;
-            document.getElementById('end-score').innerText = totalScore;
+            document.getElementById('end-score').innerText = `${totalScore} / 100`;
             document.getElementById('end-time').innerText = formatTime(totalTimeSpent);
             
-            let msg = "", color = "";
-            if (totalScore === 100) { msg = "超凡入聖，傳說封印師！🏆"; color = "#f1c40f"; }
-            else if (totalScore >= 90) { msg = "首屈一指，至尊封印師！✨"; color = "#9b59b6"; }
-            else if (totalScore >= 75) { msg = "出類拔萃，高級封印師！"; color = "#3498db"; }
-            else if (totalScore >= 60) { msg = "中規中矩，初級封印師！"; color = "#27ae60"; }
-            else { msg = "再接再勵，見習封印師！"; color = "#7f8c8d"; }
-            
-            const em = document.getElementById('end-msg');
-            em.innerText = msg; em.style.color = color;
-            
-            let lb = JSON.parse(localStorage.getItem('coludoku_lb_v3')||"[]");
-            lb.push({ name: playerName, score: totalScore, time: totalTimeSpent });
-            lb.sort((a,b)=> b.score - a.score || a.time - b.time);
-            lb = lb.slice(0, 10);
-            localStorage.setItem('coludoku_lb_v3', JSON.stringify(lb));
-            document.getElementById('lb-body').innerHTML = lb.map((r,i)=> `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.score}分</td><td>${formatTime(r.time)}</td></tr>`).join('');
-            
-            // 顯示最速紀錄
+            let msg = "";
+            if (totalScore === 100) msg = "超凡入聖，傳奇封印師！🏆";
+            else if (totalScore >= 90) msg = "出類拔萃，至尊封印師！✨";
+            else if (totalScore >= 75) msg = "首屈一指，高級封印師！";
+            else if (totalScore >= 60) msg = "中規中矩，初級封印師！";
+            else msg = "再接再勵...見習封印師！";
+            document.getElementById('end-msg').innerText = msg;
+
+            const lbData = saveRecord();
+            const lbBody = document.getElementById('lb-body');
+            lbBody.innerHTML = "";
+            lbData.forEach((r, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="lb-rank">${i+1}</td><td class="lb-name">${r.name}</td><td class="lb-score">${r.score}</td><td class="lb-time">${formatTime(r.time)}</td>`;
+                lbBody.appendChild(tr);
+            });
+
             const bests = JSON.parse(localStorage.getItem('coludoku_best_v3') || "{}");
-            document.getElementById('best-levels-grid').innerHTML = [1,2,3,4,5,6].map(i => {
-                const r = bests[i];
-                return `<div class="bl-item"><b>L${i}</b>: ${r ? r.name + ' (' + formatTime(r.time) + ')' : '無資料'}</div>`;
-            }).join('');
+            const blGrid = document.getElementById('best-levels-grid');
+            blGrid.innerHTML = "";
+            for (let i=1; i<=6; i++) {
+                const rec = bests[i];
+                const div = document.createElement('div');
+                div.className = 'bl-item';
+                if(rec) div.innerHTML = `<span class="bl-lvl">L${i}</span> ${rec.name} (${formatTime(rec.time)})`;
+                else div.innerHTML = `<span class="bl-lvl">L${i}</span> 虛位以待`;
+                blGrid.appendChild(div);
+            }
         }
-        function formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; }
+
+        // --- 遊戲操作 ---
+        function renderGameGrid() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            const glowLayer = document.createElement('div');
+            glowLayer.className = 'glow-overlay';
+            glowLayer.id = 'glow-layer';
+            container.appendChild(glowLayer);
+
+            for(let i=0; i<9; i++) {
+                const config = currentLayoutConfig[i];
+                const block = userBoard[i];
+                const div = document.createElement('div');
+                if (config.type === 'EMPTY') {
+                    div.className = 'block empty-slot';
+                    div.style.visibility = 'hidden';
+                } else {
+                    div.className = 'block';
+                    if (block) {
+                        if (block.isFixed) div.classList.add('fixed'); else div.classList.add('user-placed');
+                        const imagePath = `images/block_${block.id}_${block.face}.png`;
+                        const rot = block.rot * 90;
+                        div.innerHTML = `<img src="${imagePath}" class="block-image" style="transform: rotate(${rot}deg);" draggable="false">`;
+                        const edgeZone = document.createElement('div');
+                        edgeZone.className = 'zone-edge';
+                        edgeZone.onclick = (e) => { e.stopPropagation(); rotateBlock(i); };
+                        div.appendChild(edgeZone);
+                        if (!block.isFixed) {
+                            const centerZone = document.createElement('div');
+                            centerZone.className = 'zone-center';
+                            centerZone.onclick = (e) => { e.stopPropagation(); flipBlock(i); };
+                            
+                            // 長按移除
+                            const startLongPress = () => { longPressTimer = setTimeout(() => clearBlock(i), 600); };
+                            const cancelLongPress = () => clearTimeout(longPressTimer);
+                            centerZone.addEventListener('mousedown', startLongPress);
+                            centerZone.addEventListener('touchstart', startLongPress);
+                            centerZone.addEventListener('mouseup', cancelLongPress);
+                            centerZone.addEventListener('touchend', cancelLongPress);
+                            centerZone.addEventListener('mouseleave', cancelLongPress);
+
+                            div.appendChild(centerZone);
+                        }
+                    } else {
+                        div.innerHTML = '+';
+                        div.className = 'empty-slot';
+                        div.onclick = () => openPicker(i);
+                    }
+                }
+                container.appendChild(div);
+            }
+            updateGlowsAndWin();
+        }
+
+        function rotateBlock(index) {
+            if (userBoard[index] && !isRoundWon) {
+                userBoard[index].rot = (userBoard[index].rot + 1) % 4;
+                playSound('action'); renderGameGrid();
+            }
+        }
+        function flipBlock(index) {
+            if (userBoard[index] && !userBoard[index].isFixed && !isRoundWon) {
+                userBoard[index].face = userBoard[index].face === 'B' ? 'W' : 'B';
+                playSound('action'); renderGameGrid();
+            }
+        }
+        function clearBlock(index) {
+            if (isRoundWon) return;
+            userBoard[index] = null;
+            playSound('action'); 
+            renderGameGrid();
+        }
+        
+        function getAvailableBlocks() {
+            const used = new Set();
+            userBoard.forEach(b => { if(b) used.add(b.id); });
+            return [1,2,3,4,5,6,7,8,9].filter(id => !used.has(id));
+        }
+        function openPicker(index) {
+            if (isRoundWon) return;
+            pickingSlot = index;
+            const available = getAvailableBlocks();
+            const grid = document.getElementById('picker-grid');
+            grid.innerHTML = '';
+            available.forEach(id => {
+                const div = document.createElement('div');
+                div.className = 'picker-item';
+                div.innerHTML = `<img src="images/block_${id}_B.png">`;
+                div.onclick = () => {
+                    userBoard[pickingSlot] = { id: id, face: 'B', rot: 0, isFixed: false };
+                    playSound('action'); closePicker(); renderGameGrid();
+                };
+                grid.appendChild(div);
+            });
+            document.getElementById('picker-modal').style.display = 'flex';
+        }
+        function closePicker() { document.getElementById('picker-modal').style.display = 'none'; }
+
+        // --- 驗證與光暈 ---
+        function getRotatedMatrix(matrix, times) {
+            let m = JSON.parse(JSON.stringify(matrix));
+            for (let t = 0; t < times; t++) {
+                const newM = [[0,0],[0,0]];
+                newM[0][1] = m[0][0]; newM[1][1] = m[0][1];
+                newM[1][0] = m[1][1]; newM[0][0] = m[1][0];
+                m = newM;
+            } return m;
+        }
+        function getFullGrid() {
+            let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
+            for(let i=0; i<9; i++) {
+                if(!userBoard[i]) continue;
+                let b = userBoard[i];
+                let baseRow = Math.floor(i / 3) * 2;
+                let baseCol = (i % 3) * 2;
+                let matrix = getRotatedMatrix(BLOCKS[b.id][b.face], b.rot);
+                fullGrid[baseRow][baseCol] = matrix[0][0]; fullGrid[baseRow][baseCol+1] = matrix[0][1];
+                fullGrid[baseRow+1][baseCol] = matrix[1][0]; fullGrid[baseRow+1][baseCol+1] = matrix[1][1];
+            } return fullGrid;
+        }
+        function isLineValid(grid, idx, isRow) {
+            let values = [];
+            for (let k = 0; k < 6; k++) {
+                const val = isRow ? grid[idx][k] : grid[k][idx];
+                if (val !== 0) values.push(val);
+            }
+            if (values.length === 0) return false;
+            const unique = new Set(values);
+            return unique.size === values.length;
+        }
+        function updateGlowsAndWin() {
+            const glowLayer = document.getElementById('glow-layer');
+            glowLayer.innerHTML = '';
+            const grid = getFullGrid();
+            let currentValidLineCount = 0;
+            
+            for (let r = 0; r < 3; r++) {
+                let cnt = 0;
+                if(userBoard[r*3]) cnt++; if(userBoard[r*3+1]) cnt++; if(userBoard[r*3+2]) cnt++;
+                if (cnt > 1 && isLineValid(grid, r*2, true) && isLineValid(grid, r*2+1, true)) {
+                    const glow = document.createElement('div');
+                    glow.className = 'glow-bar glow-row';
+                    glow.style.top = (r * 33.33 + 0.5) + '%';
+                    glowLayer.appendChild(glow);
+                    currentValidLineCount++;
+                }
+            }
+            for (let c = 0; c < 3; c++) {
+                let cnt = 0;
+                if(userBoard[c]) cnt++; if(userBoard[c+3]) cnt++; if(userBoard[c+6]) cnt++;
+                if (cnt > 1 && isLineValid(grid, c*2, false) && isLineValid(grid, c*2+1, false)) {
+                    const glow = document.createElement('div');
+                    glow.className = 'glow-bar glow-col';
+                    glow.style.left = (c * 33.33 + 0.5) + '%';
+                    glowLayer.appendChild(glow);
+                    currentValidLineCount++;
+                }
+            }
+            if (currentValidLineCount > lastValidLineCount) playSound('line');
+            lastValidLineCount = currentValidLineCount;
+
+            const isFull = userBoard.every((b, i) => currentLayoutConfig[i].type === 'EMPTY' || b !== null);
+            if (isFull && isValid(userBoard) && !isRoundWon) {
+                isRoundWon = true;
+                clearInterval(timerInterval);
+                playSound('win');
+                const spent = Math.floor((Date.now() - roundStartTime) / 1000);
+                if (spent <= 60) {
+                    setTimeout(() => playSound('bonus'), 800);
+                    document.getElementById('level-info').innerText += " ⭐ 速通達成！";
+                    document.getElementById('level-info').style.color = "#f1c40f";
+                }
+                document.getElementById('grid-container').classList.add('win-glow');
+                document.getElementById('btn-next').style.display = 'inline-block';
+                document.getElementById('action-controls').style.display = 'none'; // 贏了之後隱藏控制鈕
+            }
+        }
+        function isValid(boardState) {
+            let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
+            for(let i=0; i<9; i++) {
+                if(!boardState[i]) continue;
+                let b = boardState[i];
+                let baseRow = Math.floor(i / 3) * 2;
+                let baseCol = (i % 3) * 2;
+                let matrix = getRotatedMatrix(BLOCKS[b.id][b.face], b.rot);
+                fullGrid[baseRow][baseCol] = matrix[0][0]; fullGrid[baseRow][baseCol+1] = matrix[0][1];
+                fullGrid[baseRow+1][baseCol] = matrix[1][0]; fullGrid[baseRow+1][baseCol+1] = matrix[1][1];
+            }
+            for (let i = 0; i < 6; i++) {
+                let rowSeen = new Set(), colSeen = new Set();
+                for (let j = 0; j < 6; j++) {
+                    let rVal = fullGrid[i][j];
+                    if (rVal !== 0) { if (rowSeen.has(rVal)) return false; rowSeen.add(rVal); }
+                    let cVal = fullGrid[j][i];
+                    if (cVal !== 0) { if (colSeen.has(cVal)) return false; colSeen.add(cVal); }
+                }
+            }
+            return true;
+        }
+
+        // --- 求解與輔助 ---
+        function forceSolve(manual = true) {
+            clearInterval(timerInterval);
+            let solverBoard = Array(9).fill(null);
+            let usedIDs = new Set();
+            for(let i=0; i<9; i++) {
+                if (currentLayoutConfig[i].type === 'FIXED') usedIDs.add(currentLayoutConfig[i].id);
+            }
+            setTimeout(() => {
+                if (solveStep(0, solverBoard, usedIDs)) {
+                    userBoard = solverBoard;
+                    renderGameGrid();
+                    document.getElementById('grid-container').classList.add('win-glow');
+                    document.getElementById('btn-solve').disabled = true;
+                    document.getElementById('btn-reset').disabled = true; // 放棄後禁用重置
+                    document.getElementById('btn-next').style.display = 'inline-block';
+                    document.getElementById('action-controls').style.display = 'none';
+                    isRoundWon = true; 
+                    isSolverUsed = true;
+                    if (manual) {
+                        document.getElementById('level-info').innerText = "使用禁忌魔法，本關不計分";
+                        document.getElementById('level-info').style.color = "#e74c3c";
+                    }
+                } else { alert("無法封印！"); }
+            }, 100);
+        }
+
+        function solveStep(idx, board, usedIDs, dryRun = false) {
+            if (idx >= 9) return true;
+            const config = currentLayoutConfig[idx];
+            if (config.type === 'EMPTY') return solveStep(idx + 1, board, usedIDs, dryRun);
+            if (config.type === 'FIXED') {
+                const { id, face } = config;
+                for (let rot = 0; rot < 4; rot++) {
+                    board[idx] = { id, face, rot, isFixed: true };
+                    if (isValidPartially(board)) {
+                        if (solveStep(idx + 1, board, usedIDs, dryRun)) return true;
+                    }
+                }
+                board[idx] = null; return false;
+            }
+            if (config.type === 'SOLVE') {
+                for (let id = 1; id <= 9; id++) {
+                    if (!usedIDs.has(id)) {
+                        usedIDs.add(id);
+                        for (let face of ['B', 'W']) {
+                            for (let rot = 0; rot < 4; rot++) {
+                                board[idx] = { id, face, rot, isFixed: false };
+                                if (isValidPartially(board)) {
+                                    if (solveStep(idx + 1, board, usedIDs, dryRun)) return true;
+                                }
+                            }
+                        }
+                        board[idx] = null; usedIDs.delete(id);
+                    }
+                }
+                return false;
+            }
+            return false;
+        }
+
+        function isValidPartially(boardState) {
+             let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
+             for(let i=0; i<9; i++) {
+                if(!boardState[i]) continue;
+                let b = boardState[i];
+                let baseRow = Math.floor(i / 3) * 2;
+                let baseCol = (i % 3) * 2;
+                let matrix = getRotatedMatrix(BLOCKS[b.id][b.face], b.rot);
+                fullGrid[baseRow][baseCol] = matrix[0][0]; fullGrid[baseRow][baseCol+1] = matrix[0][1];
+                fullGrid[baseRow+1][baseCol] = matrix[1][0]; fullGrid[baseRow+1][baseCol+1] = matrix[1][1];
+            }
+            for (let i = 0; i < 6; i++) {
+                let rowSeen = new Set(), colSeen = new Set();
+                for (let j = 0; j < 6; j++) {
+                    let rVal = fullGrid[i][j];
+                    if (rVal !== 0) { if (rowSeen.has(rVal)) return false; rowSeen.add(rVal); }
+                    let cVal = fullGrid[j][i];
+                    if (cVal !== 0) { if (colSeen.has(cVal)) return false; colSeen.add(cVal); }
+                }
+            }
+            return true;
+        }
     </script>
 </body>
 </html>
