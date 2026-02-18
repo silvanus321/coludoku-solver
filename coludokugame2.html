@@ -333,11 +333,11 @@
 
     <div id="picker-modal" class="modal-overlay" onclick="closePicker()">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h3>選擇魔石</h3>
+            <h3 id="picker-title">選擇魔石 (B面)</h3>
             <div id="picker-grid" class="picker-grid"></div>
-            <div style="margin-top:20px; display: flex; gap: 10px; justify-content: center;">
-                <button onclick="closePicker()" style="padding:10px 20px; background:#ddd; border:none; border-radius:20px; font-weight:bold;">取消</button>
-                <button id="btn-flip-all-w" onclick="flipAllToW()" style="padding:10px 20px; background:#9b59b6; color: white; border:none; border-radius:20px; font-weight:bold;">翻面</button>
+            <div style="margin-top:15px; display:flex; justify-content:center; gap:10px;">
+                <button onclick="togglePickerFace()" style="padding:10px 20px; background:#9b59b6; color:white; border:none; border-radius:20px; font-weight:bold;">🔄 翻面</button>
+                <button onclick="closePicker()" style="padding:10px 20px; background:#ddd; border:none; border-radius:20px;">取消</button>
             </div>
         </div>
     </div>
@@ -526,6 +526,7 @@
         let currentTotalTime = 0; // 新增：保存該關卡總時間
         let lastValidLineCount = 0;
         let longPressTimer;
+        let pickerFace = 'B'; // 新增：追蹤彈窗魔石的面
 
         // --- 核心流程 ---
         function startGame() {
@@ -848,23 +849,6 @@
                 playSound('action'); renderGameGrid();
             }
         }
-        // --- 新增：全部翻轉至W面功能 ---
-        function flipAllToW() {
-            if (isRoundWon) return;
-            let changed = false;
-            userBoard.forEach(block => {
-                if (block && !block.isFixed && block.face !== 'W') {
-                    block.face = 'W';
-                    changed = true;
-                }
-            });
-            if (changed) {
-                playSound('action');
-                renderGameGrid();
-            }
-            closePicker();
-        }
-
         function clearBlock(index) {
             if (isRoundWon) return;
             userBoard[index] = null;
@@ -877,24 +861,39 @@
             userBoard.forEach(b => { if(b) used.add(b.id); });
             return [1,2,3,4,5,6,7,8,9].filter(id => !used.has(id));
         }
+
+        // --- 改進：選擇魔石彈窗邏輯 ---
         function openPicker(index) {
             if (isRoundWon) return;
             pickingSlot = index;
+            pickerFace = 'B'; // 預設顯示 B 面
+            renderPickerGrid();
+            document.getElementById('picker-modal').style.display = 'flex';
+        }
+
+        function togglePickerFace() {
+            pickerFace = (pickerFace === 'B') ? 'W' : 'B';
+            renderPickerGrid();
+        }
+
+        function renderPickerGrid() {
             const available = getAvailableBlocks();
             const grid = document.getElementById('picker-grid');
+            document.getElementById('picker-title').innerText = `選擇魔石 (${pickerFace}面)`;
             grid.innerHTML = '';
+            
             available.forEach(id => {
                 const div = document.createElement('div');
                 div.className = 'picker-item';
-                div.innerHTML = `<img src="images/block_${id}_B.png">`;
+                div.innerHTML = `<img src="images/block_${id}_${pickerFace}.png">`;
                 div.onclick = () => {
-                    userBoard[pickingSlot] = { id: id, face: 'B', rot: 0, isFixed: false };
+                    userBoard[pickingSlot] = { id: id, face: pickerFace, rot: 0, isFixed: false };
                     playSound('action'); closePicker(); renderGameGrid();
                 };
                 grid.appendChild(div);
             });
-            document.getElementById('picker-modal').style.display = 'flex';
         }
+
         function closePicker() { document.getElementById('picker-modal').style.display = 'none'; }
 
         // --- 驗證與光暈 ---
