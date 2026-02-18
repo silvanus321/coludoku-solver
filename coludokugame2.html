@@ -335,7 +335,10 @@
         <div class="modal-content" onclick="event.stopPropagation()">
             <h3>選擇魔石</h3>
             <div id="picker-grid" class="picker-grid"></div>
-            <button onclick="closePicker()" style="margin-top:15px; padding:10px 30px; background:#ddd; border:none; border-radius:20px;">取消</button>
+            <div style="margin-top:20px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="closePicker()" style="padding:10px 20px; background:#ddd; border:none; border-radius:20px; font-weight:bold;">取消</button>
+                <button id="btn-flip-all-w" onclick="flipAllToW()" style="padding:10px 20px; background:#9b59b6; color: white; border:none; border-radius:20px; font-weight:bold;">翻面</button>
+            </div>
         </div>
     </div>
 
@@ -499,12 +502,12 @@
             { id: 36, name: "No.036", level: 6, active: [1,2,3,5,7,8,9], targets: [3,5,7] }
         ];
         const LEVEL_CONFIG = {
-            1: { time: 180, base: 12, bonus: 1 },
-            2: { time: 240, base: 12, bonus: 2 },
-            3: { time: 300, base: 13, bonus: 3 },
-            4: { time: 360, base: 13, bonus: 4 },
-            5: { time: 420, base: 14, bonus: 5 },
-            6: { time: 480, base: 14, bonus: 6 }
+            1: { time: 120, base: 12, bonus: 1 },
+            2: { time: 180, base: 12, bonus: 2 },
+            3: { time: 240, base: 13, bonus: 3 },
+            4: { time: 300, base: 13, bonus: 4 },
+            5: { time: 360, base: 14, bonus: 5 },
+            6: { time: 420, base: 14, bonus: 6 }
         };
 
         // --- 變數 ---
@@ -845,6 +848,23 @@
                 playSound('action'); renderGameGrid();
             }
         }
+        // --- 新增：全部翻轉至W面功能 ---
+        function flipAllToW() {
+            if (isRoundWon) return;
+            let changed = false;
+            userBoard.forEach(block => {
+                if (block && !block.isFixed && block.face !== 'W') {
+                    block.face = 'W';
+                    changed = true;
+                }
+            });
+            if (changed) {
+                playSound('action');
+                renderGameGrid();
+            }
+            closePicker();
+        }
+
         function clearBlock(index) {
             if (isRoundWon) return;
             userBoard[index] = null;
