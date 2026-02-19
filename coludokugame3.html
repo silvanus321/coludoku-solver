@@ -105,18 +105,21 @@
         .picker-item { border: 1px solid #ddd; border-radius: 8px; padding: 5px; cursor: pointer; }
         .picker-item img { width: 100%; }
 
+        /* 新版合併排行榜樣式 */
         .leaderboard-box { margin-top: 20px; text-align: left; }
-        .lb-title { font-size: 1rem; color: #555; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; }
-        .lb-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        .lb-table th { text-align: left; color: #888; padding: 5px; font-size: 0.8rem; }
-        .lb-table td { padding: 6px 5px; border-bottom: 1px solid #f0f0f0; }
-        .lb-rank { font-weight: bold; color: #27ae60; width: 25px; }
+        .lb-title { font-size: 1.1rem; color: #333; border-bottom: 2px solid #f1c40f; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; text-align: center; }
+        .lb-level-header { background: #34495e; color: #f1c40f; padding: 6px 10px; font-weight: bold; margin-top: 15px; border-radius: 8px 8px 0 0; font-size: 0.95rem; display: flex; justify-content: space-between;}
+        .lb-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: #f9f9f9; border-radius: 0 0 8px 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+        .lb-table th { text-align: left; color: #7f8c8d; padding: 6px 5px; background: #ecf0f1; font-size: 0.75rem; border-bottom: 1px solid #ddd;}
+        .lb-table td { padding: 6px 5px; border-bottom: 1px solid #eee; color: #333;}
+        .lb-table tr:last-child td { border-bottom: none; }
+        .lb-rank { font-weight: bold; width: 25px; text-align: center; }
+        .rank-1 { color: #f1c40f; text-shadow: 0 0 2px rgba(241, 196, 15, 0.5); font-size: 1rem;}
+        .rank-2 { color: #95a5a6; }
+        .rank-3 { color: #d35400; }
         .lb-name { font-weight: bold; }
-        .lb-score { color: #e67e22; text-align: right; }
+        .lb-score { color: #e67e22; text-align: right; font-weight: bold; }
         .lb-time { color: #7f8c8d; text-align: right; font-family: monospace; }
-        .best-levels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .bl-item { background: #f9f9f9; padding: 5px; border-radius: 5px; font-size: 0.8rem; border: 1px solid #eee; }
-        .bl-lvl { font-weight: bold; color: #3498db; }
 
         #start-screen { position: absolute; top:0; left:0; width:100%; height:100%; background: #2c3e50; z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .intro-box { text-align: center; padding: 20px; width: 100%; box-sizing: border-box;}
@@ -194,18 +197,7 @@
                 <div id="end-msg" style="margin-top:5px; font-size:0.9rem; color:#555;"></div>
             </div>
 
-            <div class="leaderboard-box">
-                <div class="lb-title">🏆 排行榜 (TOP 10)</div>
-                <table class="lb-table">
-                    <thead><tr><th>#</th><th>名字</th><th>分</th><th>時</th></tr></thead>
-                    <tbody id="lb-body"></tbody>
-                </table>
-            </div>
-
-            <div class="leaderboard-box">
-                <div class="lb-title">⚡ 各級傳說</div>
-                <div id="best-levels-grid" class="best-levels"></div>
-            </div>
+            <div class="leaderboard-box" id="leaderboards-container"></div>
 
             <button class="action-btn" style="margin-top:20px; padding:10px 30px;" onclick="location.reload()">再玩一次</button>
         </div>
@@ -378,8 +370,8 @@
 
         // --- 變數 ---
         let playerName = "";
-        let selectedLevel = 1; // 預設 Level 1
-        let roundPool = [];    // 存放隨機抽取的 6 題 Shape
+        let selectedLevel = 1; 
+        let roundPool = [];    
         
         let currentRound = 1;
         let totalScore = 0;
@@ -411,7 +403,6 @@
             else if (lvl === 1) pool = SHAPES.filter(s => s.id >= 1 && s.id <= 12);
             else if (lvl === 2) pool = SHAPES.filter(s => s.id >= 13 && s.id <= 24);
             else if (lvl === 3) pool = SHAPES.filter(s => s.id >= 25 && s.id <= 36);
-            // 隨機洗牌並取 6 題
             return pool.sort(() => Math.random() - 0.5).slice(0, 6);
         }
 
@@ -419,7 +410,6 @@
             const nameInput = document.getElementById('player-name').value.trim();
             if (!nameInput) { alert("請輸入封印師名號！"); return; }
             
-            // 允許播放音效
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
             playerName = nameInput;
@@ -461,7 +451,6 @@
             let attempts = 0;
             let selectedShape, selectedTile;
 
-            // 取出該回合的 Shape (陣列 index 從 0 開始)
             selectedShape = roundPool[round - 1];
 
             while (!solvable && attempts < 50) {
@@ -559,8 +548,6 @@
         function calculateTimeSpent() {
             let spent = Math.floor((Date.now() - roundStartTime) / 1000);
             totalTimeSpent += spent;
-            // 紀錄該等級的最佳通關時間 (總時間)
-            if (isRoundWon && !isSolverUsed) updateLevelBest(selectedLevel, totalTimeSpent);
             return spent;
         }
 
@@ -571,8 +558,6 @@
             if (!isSolverUsed) {
                 const config = ROUND_SETTINGS[currentRound];
                 let roundScore = config.base;
-                // 如果通關花費時間小於該關卡總時間的一定比例(比如速通設定為60秒內)
-                // 原需求：速通給予額外加分
                 if (spent <= 60) {
                     roundScore += config.bonus;
                 }
@@ -605,23 +590,26 @@
             lastValidLineCount = 0;
         }
 
-        // --- 排行榜 ---
+        // --- 新版：合併與分級排行榜 ---
         function saveRecord() {
             const record = { name: playerName, score: totalScore, time: totalTimeSpent, lvl: selectedLevel, date: Date.now() };
-            let lb = JSON.parse(localStorage.getItem('coludoku_lb_v3') || "[]");
+            // 升級版本號避免舊格式衝突
+            let lb = JSON.parse(localStorage.getItem('coludoku_lb_v4') || "[]");
             lb.push(record);
-            lb.sort((a,b) => b.score - a.score || a.time - b.time);
-            lb = lb.slice(0, 10);
-            localStorage.setItem('coludoku_lb_v3', JSON.stringify(lb));
-            return lb;
-        }
 
-        function updateLevelBest(level, time) {
-            let bests = JSON.parse(localStorage.getItem('coludoku_best_v3') || "{}");
-            if (!bests[level] || time < bests[level].time) {
-                bests[level] = { name: playerName, time: time };
-                localStorage.setItem('coludoku_best_v3', JSON.stringify(bests));
+            // 依據 Level 分組
+            let grouped = { 0: [], 1: [], 2: [], 3: [] };
+            lb.forEach(r => { if (grouped[r.lvl] !== undefined) grouped[r.lvl].push(r); });
+            
+            let newLb = [];
+            // 每級各排序並保留前 5 名
+            for(let i=0; i<=3; i++) {
+                grouped[i].sort((a,b) => b.score - a.score || a.time - b.time);
+                newLb.push(...grouped[i].slice(0, 5));
             }
+            
+            localStorage.setItem('coludoku_lb_v4', JSON.stringify(newLb));
+            return grouped; // 回傳分組好的資料方便渲染
         }
 
         function formatTime(sec) {
@@ -634,7 +622,6 @@
             document.getElementById('end-modal').style.display = 'flex';
             document.getElementById('end-player-name').innerText = `封印師：${playerName} (挑戰 L${selectedLevel})`;
             
-            // 計算理論滿分
             let maxScore = 0;
             for(let i=1; i<=6; i++) maxScore += (ROUND_SETTINGS[i].base + ROUND_SETTINGS[i].bonus);
 
@@ -650,25 +637,37 @@
             else msg = "再接再勵...見習封印師！";
             document.getElementById('end-msg').innerText = msg;
 
-            const lbData = saveRecord();
-            const lbBody = document.getElementById('lb-body');
-            lbBody.innerHTML = "";
-            lbData.forEach((r, i) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td class="lb-rank">${i+1}</td><td class="lb-name">${r.name}<br><small style="color:#bdc3c7;">L${r.lvl}</small></td><td class="lb-score">${r.score}</td><td class="lb-time">${formatTime(r.time)}</td>`;
-                lbBody.appendChild(tr);
-            });
-
-            const bests = JSON.parse(localStorage.getItem('coludoku_best_v3') || "{}");
-            const blGrid = document.getElementById('best-levels-grid');
-            blGrid.innerHTML = "";
-            for (let i=0; i<=3; i++) {
-                const rec = bests[i];
-                const div = document.createElement('div');
-                div.className = 'bl-item';
-                if(rec) div.innerHTML = `<span class="bl-lvl">L${i}</span> ${rec.name} (${formatTime(rec.time)})`;
-                else div.innerHTML = `<span class="bl-lvl">L${i}</span> 虛位以待`;
-                blGrid.appendChild(div);
+            // 渲染排行榜
+            const groupedLbData = saveRecord();
+            const container = document.getElementById('leaderboards-container');
+            container.innerHTML = `<div class="lb-title">🏆 各級傳說排行榜 (TOP 5)</div>`;
+            
+            for(let lvl=0; lvl<=3; lvl++) {
+                const records = groupedLbData[lvl];
+                let html = `
+                    <div class="lb-level-header"><span>🔥 LEVEL ${lvl} 排行榜</span></div>
+                    <table class="lb-table">
+                        <thead><tr><th class="lb-rank">#</th><th>稱號</th><th style="text-align:right;">分數</th><th style="text-align:right;">總耗時</th></tr></thead>
+                        <tbody>
+                `;
+                
+                if (records.length === 0) {
+                    html += `<tr><td colspan="4" style="text-align:center; color:#95a5a6; padding:15px;">尚無紀錄，等你來挑戰！</td></tr>`;
+                } else {
+                    records.forEach((r, i) => {
+                        let rankClass = i === 0 ? 'rank-1' : (i === 1 ? 'rank-2' : (i === 2 ? 'rank-3' : ''));
+                        html += `
+                            <tr>
+                                <td class="lb-rank ${rankClass}">${i+1}</td>
+                                <td class="lb-name">${r.name}</td>
+                                <td class="lb-score">${r.score}</td>
+                                <td class="lb-time">${formatTime(r.time)}</td>
+                            </tr>
+                        `;
+                    });
+                }
+                html += `</tbody></table>`;
+                container.innerHTML += html;
             }
         }
 
@@ -856,7 +855,6 @@
                 playSound('win');
                 const spent = Math.floor((Date.now() - roundStartTime) / 1000);
                 
-                // 速通判定：通關時間 <= 60秒
                 if (spent <= 60) {
                     setTimeout(() => playSound('bonus'), 800);
                     const bonusPt = ROUND_SETTINGS[currentRound].bonus;
