@@ -263,7 +263,7 @@
             userBoard = Array(9).fill(null);
             for(let i=0; i<9; i++) {
                 if (currentLayoutConfig[i].type === 'FIXED') {
-                    userBoard[i] = { id: currentLayoutConfig[i].id, face: currentLayoutConfig[i].face, rot: 0, isFixed: true };
+                    userBoard[i] = { id: currentLayoutConfig[i].id, face: currentLayoutConfig[i].face, rot: 0, isFixed: true, isHinted: false };
                 }
             }
             
@@ -373,7 +373,7 @@
             userBoard = Array(9).fill(null);
             for(let i=0; i<9; i++) {
                 if (currentLayoutConfig[i].type === 'FIXED') {
-                    userBoard[i] = { id: currentLayoutConfig[i].id, face: currentLayoutConfig[i].face, rot: 0, isFixed: true };
+                    userBoard[i] = { id: currentLayoutConfig[i].id, face: currentLayoutConfig[i].face, rot: 0, isFixed: true, isHinted: false };
                 }
             }
             renderGameGrid();
@@ -428,8 +428,8 @@
             const spent = calculateTimeSpent(); 
             if (!isSolverUsed) {
                 const config = ROUND_SETTINGS[currentRound];
-                // 扣除提示分數，每次扣 6 分，保底 0 分
-                let earnedScore = Math.max(0, config.base - (roundHintCount * 6));
+                // 扣除提示分數，每次扣 5 分，保底 0 分
+                let earnedScore = Math.max(0, config.base - (roundHintCount * 5));
                 
                 // 只有沒用過提示才能拿到速通加分
                 totalScore += earnedScore + (spent <= 60 && roundHintCount === 0 ? config.bonus : 0);
@@ -609,13 +609,16 @@
                         if (id !== 2) return; 
                         setIntroPhase(3);
                     }
-                    userBoard[pickingSlot] = { id: id, face: pickerFace, rot: 0, isFixed: false }; 
                     
-                    // 當玩家手動填入了原本是提示的格子，就清除提示虛影
+                    // --- 檢查是否是順著提示放下的魔石 ---
+                    let isThisHinted = false;
                     if (activeHint && activeHint.index === pickingSlot) {
-                        activeHint = null;
+                        isThisHinted = true; // 標記為提示魔石
+                        activeHint = null;   // 清除目前的虛影
                     }
 
+                    userBoard[pickingSlot] = { id: id, face: pickerFace, rot: 0, isFixed: false, isHinted: isThisHinted }; 
+                    
                     playSound('action'); closePicker(); renderGameGrid(); 
                 };
                 grid.appendChild(div);
@@ -691,6 +694,31 @@
                     setIntroPhase(4);
                     return; 
                 }
+
+                // --- 新增：檢查是否全部依賴提示 ---
+                let manualCount = 0;
+                let hintCount = 0;
+                userBoard.forEach((b, i) => {
+                    // 只檢查需要玩家手動解謎的格子
+                    if (b && !b.isFixed && currentLayoutConfig[i].type === 'SOLVE') {
+                        if (b.isHinted) hintCount++;
+                        else manualCount++;
+                    }
+                });
+
+                // 如果有使用提示，且完全沒有自己手動放的魔石 (全依賴)
+                if (hintCount > 0 && manualCount === 0) {
+                    playSound('reset'); // 播放警告音效
+                    $('grid-container').classList.add('win-glow');
+                    $('btn-next').style.display = 'inline-block'; $('action-controls').style.display = 'none'; 
+                    isSolverUsed = true; // 視同放棄，完全不計分
+                    
+                    let levelInfo = $('level-info');
+                    levelInfo.innerText = "全部依賴提示，等同放棄，本關不計分"; 
+                    levelInfo.style.color = "#e74c3c";
+                    return; // 結束，不給予過關分數
+                }
+                // ------------------------------------
 
                 playSound('win');
                 const spent = Math.floor((Date.now() - roundStartTime) / 1000);
@@ -804,8 +832,8 @@
 
             if (hintFound) {
                 let config = ROUND_SETTINGS[currentRound];
-                // 每次提示扣 6 分，保底 0 分
-                let currentBase = Math.max(0, config.base - (roundHintCount * 6)); 
+                // 每次提示扣 5 分，保底 0 分
+                let currentBase = Math.max(0, config.base - (roundHintCount * 5)); 
                 let levelInfo = $('level-info');
                 levelInfo.innerText = `💡 啟動提示 (通關分數降為 ${currentBase} 分)`;
                 levelInfo.style.color = "#f39c12";
