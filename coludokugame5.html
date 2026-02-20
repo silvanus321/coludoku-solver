@@ -124,7 +124,7 @@
             </div>
             <input type="text" id="player-name" class="name-input" placeholder="請輸入封印師名號" maxlength="10">
             <button class="action-btn" onclick="startGame()" style="margin-top: 0;">開始挑戰</button>
-            <button class="action-btn btn-reset" onclick="playIntroTutorial()" style="margin-top: 15px; width: 70%; background-color: #8e44ad;">📖 新手引導</button>
+            <button class="action-btn btn-reset" onclick="playIntroTutorial()" style="margin-top: 15px; width: 70%; background-color: #8e44ad;">📖 新手法典</button>
         </div>
     </div>
 
@@ -247,7 +247,7 @@
             $('btn-next').style.display = 'none';
             document.querySelector('.instruction-bar').style.display = 'none';
             
-            $('game-title').innerText = "新手引導";
+            $('game-title').innerText = "新手法典";
             $('intro-tut-msg').style.display = 'block';
             $('grid-container').classList.remove('win-glow');
             isRoundWon = false;
@@ -743,7 +743,7 @@
                     isSolverUsed = true; 
                     
                     let levelInfo = $('level-info');
-                    levelInfo.innerText = "全部依賴提示，等同放棄，本關不計分"; 
+                    levelInfo.innerText = "全部依賴提示，本關不計分"; 
                     levelInfo.style.color = "#e74c3c";
                     return; 
                 }
@@ -893,7 +893,7 @@
                 roundHintCount++; 
                 playSound('action');
                 let config = ROUND_SETTINGS[currentRound];
-                let currentBase = Math.max(0, config.base - (roundHintCount * 5)); 
+                let currentBase = Math.max(0, config.base - (roundHintCount * 4)); 
                 let levelInfo = $('level-info');
                 levelInfo.innerText = `💡 啟動提示 (通關分數降為 ${currentBase} 分)`;
                 levelInfo.style.color = "#f39c12";
@@ -952,3 +952,4 @@
     </script>
 </body>
 </html>
+
