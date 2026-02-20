@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>色獨封印師 (2.0 分級版)</title>
+    <title>色獨封印師 (3.0 智慧提示版)</title>
     <style>
         /* --- 1. 基礎設定 --- */
         body { font-family: "Microsoft JhengHei", Arial, sans-serif; background-color: #2c3e50; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; user-select: none; -webkit-user-select: none; touch-action: manipulation; color: white; min-height: 100vh; }
@@ -34,11 +34,13 @@
         .main-grid.win-glow { box-shadow: 0 0 30px 10px rgba(241, 196, 15, 0.6); border: 2px solid #f1c40f; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { box-shadow: 0 0 15px 5px rgba(241, 196, 15, 0.4); } 50% { box-shadow: 0 0 30px 15px rgba(241, 196, 15, 0.8); } }
 
-        .block { background-color: #ecf0f1; border: 2px solid transparent; position: relative; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; aspect-ratio: 1 / 1; }
+        .block { background-color: #ecf0f1; border: 2px solid transparent; position: relative; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; aspect-ratio: 1 / 1; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .block.fixed { border-color: #c0392b; background-color: #fadbd8; }
         .block.user-placed { border-color: #2980b9; }
+
         .block-image { width: 100%; height: 100%; object-fit: contain; transition: transform 0.2s ease; }
-        .empty-slot { background-color: rgba(0,0,0,0.2); color: #7f8c8d; font-size: 2rem; cursor: pointer; display: flex; justify-content: center; align-items: center; border: 2px dashed rgba(255,255,255,0.1); }
+        .empty-slot { background-color: rgba(0,0,0,0.2); color: #7f8c8d; font-size: 2rem; cursor: pointer; display: flex; justify-content: center; align-items: center; border: 2px dashed rgba(255,255,255,0.1); border-radius: 6px; position: relative; overflow: hidden; }
+        
         .zone-edge { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 11; }
         .zone-center { position: absolute; top: 20%; left: 20%; width: 60%; height: 60%; z-index: 12; border-radius: 50%; }
 
@@ -48,12 +50,17 @@
         .glow-row { left: 1%; width: 98%; height: 31%; background: linear-gradient(to bottom, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 25%, rgba(255,255,255,0) 75%, rgba(255,255,255,0.5) 100%); }
         .glow-col { top: 1%; height: 98%; width: 31%; background: linear-gradient(to right, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 25%, rgba(255,255,255,0) 75%, rgba(255,255,255,0.5) 100%); }
 
+        /* 糾錯警告動畫 */
+        @keyframes pulseRed { 0%, 100% { box-shadow: inset 0 0 10px rgba(231,76,60,0.5); border-color: #c0392b; } 50% { box-shadow: inset 0 0 20px rgba(231,76,60,0.9); border-color: #e74c3c; } }
+
         /* --- 4. 選單與按鈕 --- */
         .action-btn { background-color: #27ae60; color: white; border: none; padding: 15px 40px; font-size: 1.1rem; border-radius: 50px; cursor: pointer; margin-top: 25px; width: 80%; transition: all 0.2s; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .action-btn:active { transform: scale(0.95); }
-        .button-group { display: flex; justify-content: space-between; width: 100%; margin-top: 20px; gap: 15px; }
+        .button-group { display: flex; justify-content: space-between; width: 100%; margin-top: 20px; gap: 10px; }
         .action-btn.btn-reset { background-color: #16a085; font-size: 1rem; padding: 10px; flex: 1; margin-top: 0; }
         .action-btn.btn-reset:hover { background-color: #1abc9c; }
+        .action-btn.btn-hint { background-color: #f39c12; font-size: 1rem; padding: 10px; flex: 1; margin-top: 0; }
+        .action-btn.btn-hint:hover { background-color: #e67e22; }
         .action-btn.give-up { background-color: #7f8c8d; font-size: 1rem; padding: 10px; flex: 1; margin-top: 0; }
         .action-btn.give-up:hover { background-color: #95a5a6; }
         .action-btn.failed { background-color: #c0392b; cursor: not-allowed; }
@@ -112,12 +119,12 @@
                 <button class="lvl-btn" onclick="selectLevel(2, this)">LEVEL 2<br><small>Shape 13-24</small></button>
                 <button class="lvl-btn" onclick="selectLevel(3, this)">LEVEL 3<br><small>Shape 25-36</small></button>
                 <button class="lvl-btn" onclick="selectLevel(4, this)">LEVEL 4<br><small>Shape 37-48</small></button>
-<button class="lvl-btn" onclick="selectLevel(5, this)">LEVEL 5<br><small>Shape 49-60</small></button>
-<button class="lvl-btn" onclick="selectLevel(6, this)">LEVEL 6<br><small>Shape 61-72</small></button>
+                <button class="lvl-btn" onclick="selectLevel(5, this)">LEVEL 5<br><small>Shape 49-60</small></button>
+                <button class="lvl-btn" onclick="selectLevel(6, this)">LEVEL 6<br><small>Shape 61-72</small></button>
             </div>
             <input type="text" id="player-name" class="name-input" placeholder="請輸入封印師名號" maxlength="10">
             <button class="action-btn" onclick="startGame()" style="margin-top: 0;">開始挑戰</button>
-            <button class="action-btn btn-reset" onclick="playIntroTutorial()" style="margin-top: 15px; width: 70%; background-color: #8e44ad;">📖 新手引導</button>
+            <button class="action-btn btn-reset" onclick="playIntroTutorial()" style="margin-top: 15px; width: 70%; background-color: #8e44ad;">📖 新手聖典</button>
         </div>
     </div>
 
@@ -135,19 +142,20 @@
         <div class="level-info" id="level-info"></div>
         <div id="intro-tut-msg" style="display:none; background: rgba(0,0,0,0.85); color: #ecf0f1; padding: 15px; text-align: left; font-size: 1rem; border-radius: 10px; border: 2px solid #3498db; margin-bottom: 10px; width: 100%; box-sizing: border-box; line-height: 1.6; z-index: 50;"></div>
 
-        <div class="instruction-bar">👆輕點中間翻面 | 🔄輕點邊緣旋轉 | 🗑️長按中間移除</div>
+        <div class="instruction-bar">👆 輕點中間翻面 | 🔄 輕點邊緣旋轉 | 🗑️ 長按中間移除</div>
         <div id="grid-container" class="main-grid"></div>
         <button id="btn-next" class="action-btn" style="display:none;" onclick="nextLevel()">下一關 ➡️</button>
         
         <div id="action-controls" class="button-group">
             <button id="btn-reset" class="action-btn btn-reset" onclick="resetLevel()">🔄 重置</button>
+            <button id="btn-hint" class="action-btn btn-hint" onclick="provideHint()">💡 提示</button>
             <button id="btn-solve" class="action-btn give-up" onclick="forceSolve(true)">🏳️ 放棄</button>
         </div>
     </div>
 
     <div id="picker-modal" class="modal-overlay" onclick="closePicker()">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h3 id="picker-title">選擇魔石 (B面)</h3>
+            <h3 id="picker-title">選擇魔石(B面)</h3>
             <div id="picker-grid" class="picker-grid"></div>
             <div style="margin-top:15px; display:flex; justify-content:center; gap:10px;">
                 <button onclick="togglePickerFace()" style="padding:10px 20px; background:#9b59b6; color:white; border:none; border-radius:20px; font-weight:bold;">🔄 翻面</button>
@@ -164,7 +172,7 @@
                     <div>得分 <span id="end-score" style="color:#27ae60; font-weight:bold; font-size:1.1rem;">0 / 100</span></div>
                     <div>總耗時 <span id="end-time" style="color:#e67e22; font-weight:bold; font-size:1.1rem;">00:00</span></div>
                 </div>
-                <div class="percentile-box" id="end-percentile">🏆 擊敗了全服 100% 的玩家</div>
+                <div class="percentile-box" id="end-percentile">🏆 擊敗 100% 位封印師</div>
                 <div id="end-msg" style="margin-top:5px; font-size:0.9rem; color:#555;"></div>
             </div>
 
@@ -174,7 +182,7 @@
     </div>
 
     <script>
-        // --- DOM 簡寫助手 (大幅瘦身關鍵) ---
+        // --- DOM 簡寫助手 ---
         const $ = id => document.getElementById(id);
 
         // --- 0. 音效系統 ---
@@ -223,13 +231,15 @@
         let timerInterval, timeLeft = 0, currentTotalTime = 0, lastValidLineCount = 0;
         let longPressTimer, pickerFace = 'B'; 
 
+        // --- 提示系統變數 (改版) ---
+        let hintPenaltyTotal = 0;  // 改為追蹤實際被扣掉的分數
+        let activeHint = null;     // 記錄目前要顯示的提示虛影 {index, id, face, rot}
+
         // --- 沉浸式教學系統 ---
-        let introTutPhase = 0; // 0: 關閉, 1: 點擊空位, 2: 點擊2號, 3: 旋轉2號
+        let introTutPhase = 0;
 
         function playIntroTutorial() {
             $('start-screen').style.display = 'none';
-            
-            // 隱藏正式遊戲的介面元素
             document.querySelector('.hud').style.display = 'none';
             document.querySelector('.time-bar-container').style.display = 'none';
             $('level-info').style.display = 'none';
@@ -237,12 +247,11 @@
             $('btn-next').style.display = 'none';
             document.querySelector('.instruction-bar').style.display = 'none';
             
-            $('game-title').innerText = "新手引導";
+            $('game-title').innerText = "新手聖典";
             $('intro-tut-msg').style.display = 'block';
             $('grid-container').classList.remove('win-glow');
             isRoundWon = false;
 
-            // 準備 Shape 1 (ID:1) 與 Tile 1 的預設盤面
             currentLayoutConfig = {};
             for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
             const shape = SHAPES[0], tile = TARGET_TILES[0]; 
@@ -257,7 +266,7 @@
             userBoard = Array(9).fill(null);
             for(let i=0; i<9; i++) {
                 if (currentLayoutConfig[i].type === 'FIXED') {
-                    userBoard[i] = { id: currentLayoutConfig[i].id, face: currentLayoutConfig[i].face, rot: 0, isFixed: true };
+                    userBoard[i] = { id: currentLayoutConfig[i].id, face: currentLayoutConfig[i].face, rot: 0, isFixed: true, isHinted: false };
                 }
             }
             
@@ -268,19 +277,18 @@
             introTutPhase = phase;
             const msgBox = $('intro-tut-msg');
             if (phase === 1) {
-                msgBox.innerHTML = `偉大的封印師，準備好色獨封印的挑戰嗎？！<br><span style="color:#e74c3c">紅色方框</span>指定魔石可旋轉但不能翻面，<br><span style="color:#3498db">藍色方框</span>自選魔石可旋轉和翻面，<br>點擊 <span style="color:#3498db; font-weight:bold;">藍色方框</span> 加入2號魔石來完成方陣。`;
+                msgBox.innerHTML = `偉大的封印師，準備好色獨封印的挑戰嗎？！<br><span style="color:#e74c3c">紅色方框</span>指定魔石可旋轉但不能翻面，<br><span style="color:#3498db">藍色方框</span>自選魔石可旋轉和翻面，<br>點選 <span style="color:#3498db; font-weight:bold;">藍色方框</span> 來加入魔石。`;
                 renderGameGrid();
             } else if (phase === 2) {
-                msgBox.innerHTML = `翻面可看魔石背面，取消可回到魔石方陣，<br>請點選 <span style="color:#f1c40f; font-weight:bold;">2號魔石</span> 加入魔石方陣！`;
+                msgBox.innerHTML = `翻面可看背面，取消回到方陣，<br>請點選 <span style="color:#f1c40f; font-weight:bold;">魔石</span> 加入方陣！`;
             } else if (phase === 3) {
-                msgBox.innerHTML = `請點擊 <span style="color:#f1c40f; font-weight:bold;">魔石邊緣</span>來旋轉，<br>請點擊 <span style="color:#f1c40f; font-weight:bold;">魔石中間</span>來翻面，<br>所有行列寶石不同就可完成封印。`;
+                msgBox.innerHTML = `請點擊 <span style="color:#f1c40f; font-weight:bold;">魔石邊緣</span> 來旋轉，<br>請點擊 <span style="color:#f1c40f; font-weight:bold;">魔石中間</span> 來翻面，<br>所有行列寶石不同就可完成封印。`;
                 renderGameGrid(); 
             } else if (phase === 4) {
                 msgBox.innerHTML = `<div style="text-align:center; color:#27ae60; font-weight:bold; font-size:1.3rem;">🎉 恭禧完成色獨封印！</div>`;
                 playSound('win');
                 $('grid-container').classList.add('win-glow');
                 
-                // 2.5秒後復原 UI 並回到開始畫面
                 setTimeout(() => {
                     introTutPhase = 0;
                     $('intro-tut-msg').style.display = 'none';
@@ -326,14 +334,17 @@
 
         function loadRound(round) {
             isRoundWon = false; isSolverUsed = false; lastValidLineCount = 0;
+            hintPenaltyTotal = 0; activeHint = null; // 重置提示狀態
+
             $('game-title').innerText = `Round ${round}`;
             $('btn-next').style.display = 'none';
             $('action-controls').style.display = 'flex';
             
-            let btnSolve = $('btn-solve'), btnReset = $('btn-reset');
+            let btnSolve = $('btn-solve'), btnReset = $('btn-reset'), btnHint = $('btn-hint');
             btnSolve.style.display = 'block'; btnSolve.disabled = false;
             btnSolve.innerText = "🏳️ 放棄"; btnSolve.className = "action-btn give-up";
             btnReset.style.display = 'block'; btnReset.disabled = false;
+            btnHint.style.display = 'block'; btnHint.disabled = false;
             
             $('grid-container').classList.remove('win-glow');
             $('timer-disp').classList.remove('urgent');
@@ -365,7 +376,7 @@
             userBoard = Array(9).fill(null);
             for(let i=0; i<9; i++) {
                 if (currentLayoutConfig[i].type === 'FIXED') {
-                    userBoard[i] = { id: currentLayoutConfig[i].id, face: currentLayoutConfig[i].face, rot: 0, isFixed: true };
+                    userBoard[i] = { id: currentLayoutConfig[i].id, face: currentLayoutConfig[i].face, rot: 0, isFixed: true, isHinted: false };
                 }
             }
             renderGameGrid();
@@ -400,7 +411,7 @@
             calculateTimeSpent(); forceSolve(false);
             let btnSolve = $('btn-solve'), levelInfo = $('level-info');
             btnSolve.innerText = "⌛ 挑戰失敗"; btnSolve.className = "action-btn failed";
-            $('btn-reset').style.display = 'none'; 
+            $('btn-reset').style.display = 'none'; $('btn-hint').style.display = 'none';
             levelInfo.innerText = "時間耗盡，本關不計分"; levelInfo.style.color = "#e74c3c";
         }
 
@@ -420,7 +431,9 @@
             const spent = calculateTimeSpent(); 
             if (!isSolverUsed) {
                 const config = ROUND_SETTINGS[currentRound];
-                totalScore += config.base + (spent <= 60 ? config.bonus : 0);
+                // 扣除實際被扣除的總提示分數
+                let earnedScore = Math.max(0, config.base - hintPenaltyTotal);
+                totalScore += earnedScore + (spent <= 60 && hintPenaltyTotal === 0 ? config.bonus : 0);
             }
             updateHUD(); currentRound++;
             if (currentRound > 6) showEndScreen(); else loadRound(currentRound);
@@ -434,6 +447,7 @@
         function resetLevel() {
             if (isRoundWon || isSolverUsed) return;
             playSound('reset');
+            activeHint = null; 
             for (let i = 0; i < 9; i++) {
                 if (currentLayoutConfig[i].type === 'FIXED') {
                     userBoard[i].rot = 0; userBoard[i].face = currentLayoutConfig[i].face; 
@@ -468,7 +482,7 @@
             $('end-modal').style.display = 'flex';
             let maxScore = 0; for(let i=1; i<=6; i++) maxScore += (ROUND_SETTINGS[i].base + ROUND_SETTINGS[i].bonus);
 
-            $('end-player-name').innerText = `[${getRankTitle(totalScore)}] ${playerName} (挑戰 L${selectedLevel})`;
+            $('end-player-name').innerText = `[${getRankTitle(totalScore)}] ${playerName} (挑戰 Level ${selectedLevel})`;
             $('end-score').innerText = `${totalScore} / ${maxScore}`;
             $('end-time').innerText = formatTime(totalTimeSpent);
             
@@ -479,14 +493,14 @@
             const myRankIndex = lbData.findIndex(r => r.date === now), totalPlayers = lbData.length;
             let beatenPct = totalPlayers > 1 ? Math.floor(((totalPlayers - myRankIndex - 1) / totalPlayers) * 100) : 100;
             if (totalPlayers > 1 && myRankIndex === 0) beatenPct = 99;
-            $('end-percentile').innerText = `🏆 擊敗了全服 ${beatenPct}% 的玩家`;
+            $('end-percentile').innerText = `🏆 擊敗 ${beatenPct}% 位封印師`;
 
             const container = $('level-boards');
             container.innerHTML = "";
             for (let i = 1; i <= 6; i++) {
                 let lvlData = lbData.filter(r => r.lvl === i).slice(0, 5);
                 let boardHtml = `<div class="level-board"><div class="level-board-title">LEVEL ${i} 排行榜</div><table class="lb-mini-table">`;
-                if (lvlData.length === 0) boardHtml += `<tr><td style="text-align:center; color:#999; padding:15px 0;">尚無紀錄</td></tr>`;
+                if (lvlData.length === 0) boardHtml += `<tr><td style="text-align:center; color:#999; padding:15px 0;">等你挑戰</td></tr>`;
                 else lvlData.forEach((r, idx) => { boardHtml += `<tr><td class="rank">${idx + 1}</td><td class="name"><span class="title-tag">[${getRankTitle(r.score)}]</span> ${r.name}</td><td class="score-time">${r.score}分 ${formatTime(r.time)}</td></tr>`; });
                 boardHtml += `</table></div>`; container.innerHTML += boardHtml;
             }
@@ -509,6 +523,14 @@
                     if (block) {
                         div.classList.add(block.isFixed ? 'fixed' : 'user-placed');
                         div.innerHTML = `<img src="images/block_${block.id}_${block.face}.png" class="block-image" style="transform: rotate(${block.rot * 90}deg);" draggable="false">`;
+                        
+                        // --- 糾錯特效：如果目前有警告虛影，疊加在上方 ---
+                        if (activeHint && activeHint.index === i) {
+                            div.innerHTML += `<div style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(44, 62, 80, 0.85); z-index:10; display:flex; justify-content:center; align-items:center; border-radius:6px; border: 2px solid #e74c3c; box-shadow: inset 0 0 15px rgba(231, 76, 60, 0.8); pointer-events:none; animation: pulseRed 1.5s infinite;">
+                                <img src="images/block_${activeHint.id}_${activeHint.face}.png" style="width:80%; height:80%; opacity:0.8; transform: rotate(${activeHint.rot * 90}deg); filter: drop-shadow(0 0 5px #f1c40f);">
+                            </div>`;
+                        }
+
                         const edgeZone = document.createElement('div');
                         edgeZone.className = 'zone-edge'; edgeZone.onclick = (e) => { e.stopPropagation(); rotateBlock(i); };
                         div.appendChild(edgeZone);
@@ -522,8 +544,19 @@
                             div.appendChild(centerZone);
                         }
                     } else {
-                        div.innerHTML = '+'; div.className = 'empty-slot'; 
-                        // 加入第一階段的藍色光圈
+                        div.className = 'empty-slot'; 
+                        
+                        // --- 正常提示虛影 (空格時) ---
+                        if (activeHint && activeHint.index === i) {
+                            div.innerHTML = `<img src="images/block_${activeHint.id}_${activeHint.face}.png" style="width:80%; height:80%; opacity:0.4; transform: rotate(${activeHint.rot * 90}deg); pointer-events:none;">`;
+                            div.style.borderColor = '#f39c12';
+                            div.style.boxShadow = 'inset 0 0 15px rgba(243, 156, 18, 0.4)';
+                        } else {
+                            div.innerHTML = '+'; 
+                            div.style.borderColor = ''; 
+                            div.style.boxShadow = '';
+                        }
+                        
                         if (introTutPhase === 1 && config.type === 'SOLVE') div.classList.add('tut-highlight-blue');
                         div.onclick = () => openPicker(i);
                     }
@@ -533,9 +566,17 @@
             updateGlowsAndWin();
         }
 
+        // --- 互動即消除提示 ---
         function rotateBlock(index) { 
             if (userBoard[index] && !isRoundWon) { 
                 userBoard[index].rot = (userBoard[index].rot + 1) % 4; 
+                
+                // 【互動即消除提示】玩家一碰到方塊邊緣旋轉，馬上把虛影關掉，還給玩家清晰視野
+                if (activeHint && activeHint.index === index) {
+                    activeHint = null; 
+                    userBoard[index].isHinted = true; 
+                }
+
                 playSound('action'); 
                 renderGameGrid(); 
             } 
@@ -544,6 +585,13 @@
         function flipBlock(index) { 
             if (userBoard[index] && !userBoard[index].isFixed && !isRoundWon) { 
                 userBoard[index].face = userBoard[index].face === 'B' ? 'W' : 'B'; 
+                
+                // 【互動即消除提示】
+                if (activeHint && activeHint.index === index) {
+                    activeHint = null; 
+                    userBoard[index].isHinted = true;
+                }
+
                 playSound('action'); 
                 renderGameGrid(); 
             } 
@@ -551,13 +599,13 @@
 
         function clearBlock(index) { 
             if (isRoundWon) return; 
+            if (userBoard[index] && userBoard[index].isFixed) return;
+
             userBoard[index] = null; 
+            if (activeHint && activeHint.index === index) activeHint = null;
+
             playSound('action'); 
-            
-            // 【新增邏輯】如果玩家在階段三把剛放進去的魔石收回了，提示文字要退回階段一
-            if (introTutPhase === 3) {
-                setIntroPhase(1);
-            }            
+            if (introTutPhase === 3) setIntroPhase(1);            
             renderGameGrid(); 
         }
         
@@ -566,9 +614,9 @@
         function openPicker(index) { 
             if (isRoundWon) return; 
             if (introTutPhase === 1) {
-                if (currentLayoutConfig[index].type !== 'SOLVE') return; // 教學鎖定
+                if (currentLayoutConfig[index].type !== 'SOLVE') return; 
                 setIntroPhase(2);
-            } else if (introTutPhase > 0) return; // 鎖定其他階段
+            } else if (introTutPhase > 0) return; 
             
             pickingSlot = index; pickerFace = 'B'; renderPickerGrid(); $('picker-modal').style.display = 'flex'; 
         }
@@ -580,23 +628,30 @@
             $('picker-title').innerText = `選擇魔石 (${pickerFace}面)`; grid.innerHTML = '';
             getAvailableBlocks().forEach(id => {
                 const div = document.createElement('div'); div.className = 'picker-item';
-                // 加入第二階段的黃色光圈
                 if (introTutPhase === 2 && id === 2) div.classList.add('tut-highlight-yellow');
                 
                 div.innerHTML = `<img src="images/block_${id}_${pickerFace}.png">`;
                 div.onclick = () => { 
                     if (introTutPhase === 2) {
-                        if (id !== 2) return; // 教學鎖定只能選 2 號
+                        if (id !== 2) return; 
                         setIntroPhase(3);
                     }
-                    userBoard[pickingSlot] = { id: id, face: pickerFace, rot: 0, isFixed: false }; playSound('action'); closePicker(); renderGameGrid(); 
+                    
+                    let isThisHinted = false;
+                    // 【互動即消除提示】只要玩家選擇並放入了方塊，虛影就立刻消失
+                    if (activeHint && activeHint.index === pickingSlot) {
+                        isThisHinted = true; 
+                        activeHint = null; // 消除提示讓玩家可以看清楚旋轉狀況
+                    }
+
+                    userBoard[pickingSlot] = { id: id, face: pickerFace, rot: 0, isFixed: false, isHinted: isThisHinted }; 
+                    playSound('action'); closePicker(); renderGameGrid(); 
                 };
                 grid.appendChild(div);
             });
         }
         function closePicker() { 
             $('picker-modal').style.display = 'none'; 
-            // 如果玩家在階段 2 按了取消，自動退回階段 1 的文字
             if (introTutPhase === 2 && !userBoard[pickingSlot]) setIntroPhase(1); 
         }
 
@@ -656,21 +711,38 @@
             if (currentValidLineCount > lastValidLineCount) playSound('line');
             lastValidLineCount = currentValidLineCount;
 
-                        const isFull = userBoard.every((b, i) => currentLayoutConfig[i].type === 'EMPTY' || b !== null);
+            const isFull = userBoard.every((b, i) => currentLayoutConfig[i].type === 'EMPTY' || b !== null);
             if (isFull && isValid(userBoard) && !isRoundWon) {
                 isRoundWon = true; 
                 clearInterval(timerInterval); 
                 
-                // 【新增邏輯】攔截教學模式的勝利，交給劇本處理
                 if (introTutPhase > 0) {
                     setIntroPhase(4);
-                    return; // 中斷後續的一般計分與按鈕顯示
+                    return; 
                 }
 
-                // 一般遊戲勝利的邏輯
+                let manualCount = 0;
+                userBoard.forEach((b, i) => {
+                    if (b && !b.isFixed && currentLayoutConfig[i].type === 'SOLVE') {
+                        if (!b.isHinted) manualCount++;
+                    }
+                });
+
+                if (hintPenaltyTotal > 0 && manualCount === 0) {
+                    playSound('reset'); 
+                    $('grid-container').classList.add('win-glow');
+                    $('btn-next').style.display = 'inline-block'; $('action-controls').style.display = 'none'; 
+                    isSolverUsed = true; 
+                    
+                    let levelInfo = $('level-info');
+                    levelInfo.innerText = "全部依賴提示，本關不計分"; 
+                    levelInfo.style.color = "#e74c3c";
+                    return; 
+                }
+
                 playSound('win');
                 const spent = Math.floor((Date.now() - roundStartTime) / 1000);
-                if (spent <= 60) {
+                if (spent <= 60 && hintPenaltyTotal === 0) {
                     setTimeout(() => playSound('bonus'), 800);
                     let levelInfo = $('level-info');
                     levelInfo.innerText += ` ⭐ 速通達成 (+${ROUND_SETTINGS[currentRound].bonus}分)`; levelInfo.style.color = "#f1c40f";
@@ -679,6 +751,7 @@
                 $('btn-next').style.display = 'inline-block'; $('action-controls').style.display = 'none'; 
             }
         }
+        
         // --- 求解與輔助 ---
         function forceSolve(manual = true) {
             clearInterval(timerInterval);
@@ -689,10 +762,10 @@
                 if (solveStep(0, solverBoard, usedIDs)) {
                     userBoard = solverBoard; renderGameGrid();
                     $('grid-container').classList.add('win-glow');
-                    $('btn-solve').disabled = true; $('btn-reset').disabled = true; 
+                    $('btn-solve').disabled = true; $('btn-reset').disabled = true; $('btn-hint').disabled = true;
                     $('btn-next').style.display = 'inline-block'; $('action-controls').style.display = 'none';
                     isRoundWon = true; isSolverUsed = true;
-                    if (manual) { let lvl = $('level-info'); lvl.innerText = "使用禁忌魔法，本關不計分"; lvl.style.color = "#e74c3c"; }
+                    if (manual) { let lvl = $('level-info'); lvl.innerText = "放棄封印，本關不計分"; lvl.style.color = "#e74c3c"; }
                 } else { alert("無法封印！"); }
             }, 100);
         }
@@ -726,7 +799,151 @@
             }
             return false;
         }
+
+        // --- 智慧糾錯提示系統 (含動態計分) ---
+        function provideHint() {
+            if (isRoundWon) return;
+
+            if (activeHint) {
+                return; // 如果目前畫面還有提示虛影，忽略多餘的點擊
+            }
+
+            if (timeLeft > 60) {
+                alert("⚠️ 倒數 60 秒才能使用提示！");
+                return;
+            }
+
+            let tempBoard = Array(9).fill(null);
+            let usedIDs = new Set();
+            for (let i = 0; i < 9; i++) {
+                if (userBoard[i]) {
+                    tempBoard[i] = { ...userBoard[i] }; 
+                    usedIDs.add(userBoard[i].id);
+                }
+            }
+
+            let hintFound = false;
+            let targetIdx = -1;
+            let correctBlock = null;
+
+            // 1. 先檢驗目前的盤面是否「還有救」
+            let copyForCheck = tempBoard.map(b => b ? { ...b } : null);
+            let usedForCheck = new Set(usedIDs);
+            
+            if (solveHintStep(0, copyForCheck, usedForCheck)) {
+                // 有救！尋找下一個空格給提示
+                for (let i = 0; i < 9; i++) {
+                    if (currentLayoutConfig[i].type === 'SOLVE' && !userBoard[i]) {
+                        targetIdx = i;
+                        correctBlock = copyForCheck[i];
+                        hintFound = true;
+                        break;
+                    }
+                }
+            } else {
+                // 沒救了！找出造成矛盾的魔石
+                let testBoard = Array(9).fill(null);
+                for (let i = 0; i < 9; i++) {
+                    if (userBoard[i]) {
+                        testBoard[i] = { ...userBoard[i] };
+                        let copyBoard = testBoard.map(b => b ? { ...b } : null);
+                        let copyUsed = new Set();
+                        copyBoard.forEach(b => { if(b) copyUsed.add(b.id); });
+
+                        if (!solveHintStep(0, copyBoard, copyUsed)) {
+                            // 算出這格的正解
+                            let prevBoard = Array(9).fill(null);
+                            let prevUsed = new Set();
+                            for(let j=0; j<i; j++) {
+                                if(userBoard[j]) {
+                                    prevBoard[j] = { ...userBoard[j] };
+                                    prevUsed.add(userBoard[j].id);
+                                }
+                            }
+                            solveHintStep(0, prevBoard, prevUsed); 
+                            
+                            targetIdx = i;
+                            correctBlock = prevBoard[i];
+                            hintFound = true;
+                            
+                            alert("⚠️ 魔石方向錯誤！");
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (hintFound) {
+                // 判定是「加入方塊(扣4分)」還是「調整方向(扣1分)」
+                let penaltyPoints = 4; // 預設為加入或更換方塊
+                let hintMsg = "加入魔石";
+
+                if (userBoard[targetIdx] && 
+                    userBoard[targetIdx].id === correctBlock.id && 
+                    userBoard[targetIdx].face === correctBlock.face) {
+                    penaltyPoints = 1; // ID與正反面都對，只有旋轉角度錯
+                    hintMsg = "旋轉魔石";
+                }
+
+                activeHint = { index: targetIdx, id: correctBlock.id, face: correctBlock.face, rot: correctBlock.rot };
+                hintPenaltyTotal += penaltyPoints; // 累加扣分
+                
+                playSound('action');
+                let config = ROUND_SETTINGS[currentRound];
+                let currentBase = Math.max(0, config.base - hintPenaltyTotal); 
+                let levelInfo = $('level-info');
+                levelInfo.innerText = `💡 提示：${hintMsg} (-${penaltyPoints}分，通關分數降為 ${currentBase}分)`;
+                levelInfo.style.color = "#f39c12";
+
+                renderGameGrid(); 
+            } else {
+                alert("方陣已經填滿且正確囉！");
+            }
+        }
+
+        function solveHintStep(idx, board, usedIDs) {
+            if (idx >= 9) return true;
+
+            if (board[idx] !== null) {
+                if (!isValid(board)) return false; 
+                return solveHintStep(idx + 1, board, usedIDs);
+            }
+
+            const config = currentLayoutConfig[idx];
+            if (config.type === 'EMPTY') {
+                return solveHintStep(idx + 1, board, usedIDs);
+            }
+            
+            if (config.type === 'FIXED') {
+                const { id, face } = config;
+                for (let rot = 0; rot < 4; rot++) {
+                    board[idx] = { id, face, rot, isFixed: true };
+                    if (isValid(board) && solveHintStep(idx + 1, board, usedIDs)) return true;
+                }
+                board[idx] = null; 
+                return false;
+            }
+
+            if (config.type === 'SOLVE') {
+                for (let id = 1; id <= 9; id++) {
+                    if (!usedIDs.has(id)) {
+                        usedIDs.add(id);
+                        for (let face of ['B', 'W']) {
+                            for (let rot = 0; rot < 4; rot++) {
+                                board[idx] = { id, face, rot, isFixed: false };
+                                if (isValid(board)) {
+                                    if (solveHintStep(idx + 1, board, usedIDs)) return true;
+                                }
+                            }
+                        }
+                        board[idx] = null; 
+                        usedIDs.delete(id);
+                    }
+                }
+                return false; 
+            }
+            return false;
+        }
     </script>
 </body>
-
 </html>
