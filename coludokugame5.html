@@ -525,7 +525,7 @@
                 let boardHtml = `<div class="level-board"><div class="level-board-title">LEVEL ${i} 排行榜</div><table class="lb-mini-table">`;
                 if (lvlData.length === 0) boardHtml += `<tr><td style="text-align:center; color:#999; padding:15px 0;">尚無紀錄</td></tr>`;
                 else lvlData.forEach((r, idx) => { 
-                    boardHtml += `<tr><td class="rank">${idx + 1}</td><td class="name">${r.name}</td><td class="score-time">${r.score}分 <span class="hint-icon">${r.hints || 0}</span> ${formatTime(r.time)}</td></tr>`; 
+                    boardHtml += `<tr><td class="rank">${idx + 1}</td><td class="name">${r.name}</td><td class="score-time">${r.score}-<span class="hint-icon">${r.hints || 0}</span> ${formatTime(r.time)}</td></tr>`; 
                 });
                 boardHtml += `</table></div>`; container.innerHTML += boardHtml;
             }
@@ -941,4 +941,5 @@
     </script>
 </body>
 </html>
+
 
