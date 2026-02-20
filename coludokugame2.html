@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>色獨封印師 (3.0 智慧提示版)</title>
+    <title>色獨封印師 (5.0 智能繼承解答版)</title>
     <style>
         /* --- 1. 基礎設定 --- */
         body { font-family: "Microsoft JhengHei", Arial, sans-serif; background-color: #2c3e50; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; user-select: none; -webkit-user-select: none; touch-action: manipulation; color: white; min-height: 100vh; }
@@ -124,7 +124,7 @@
             </div>
             <input type="text" id="player-name" class="name-input" placeholder="請輸入封印師名號" maxlength="10">
             <button class="action-btn" onclick="startGame()" style="margin-top: 0;">開始挑戰</button>
-            <button class="action-btn btn-reset" onclick="playIntroTutorial()" style="margin-top: 15px; width: 70%; background-color: #8e44ad;">📖 新手聖典</button>
+            <button class="action-btn btn-reset" onclick="playIntroTutorial()" style="margin-top: 15px; width: 70%; background-color: #8e44ad;">📖 新手引導</button>
         </div>
     </div>
 
@@ -142,7 +142,7 @@
         <div class="level-info" id="level-info"></div>
         <div id="intro-tut-msg" style="display:none; background: rgba(0,0,0,0.85); color: #ecf0f1; padding: 15px; text-align: left; font-size: 1rem; border-radius: 10px; border: 2px solid #3498db; margin-bottom: 10px; width: 100%; box-sizing: border-box; line-height: 1.6; z-index: 50;"></div>
 
-        <div class="instruction-bar">👆 輕點中間翻面 | 🔄 輕點邊緣旋轉 | 🗑️ 長按中間移除</div>
+        <div class="instruction-bar">👆輕點中間翻面 | 🔄輕點邊緣旋轉 | 🗑️長按中間移除</div>
         <div id="grid-container" class="main-grid"></div>
         <button id="btn-next" class="action-btn" style="display:none;" onclick="nextLevel()">下一關 ➡️</button>
         
@@ -155,7 +155,7 @@
 
     <div id="picker-modal" class="modal-overlay" onclick="closePicker()">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h3 id="picker-title">選擇魔石(B面)</h3>
+            <h3 id="picker-title">選擇魔石 (B面)</h3>
             <div id="picker-grid" class="picker-grid"></div>
             <div style="margin-top:15px; display:flex; justify-content:center; gap:10px;">
                 <button onclick="togglePickerFace()" style="padding:10px 20px; background:#9b59b6; color:white; border:none; border-radius:20px; font-weight:bold;">🔄 翻面</button>
@@ -172,7 +172,7 @@
                     <div>得分 <span id="end-score" style="color:#27ae60; font-weight:bold; font-size:1.1rem;">0 / 100</span></div>
                     <div>總耗時 <span id="end-time" style="color:#e67e22; font-weight:bold; font-size:1.1rem;">00:00</span></div>
                 </div>
-                <div class="percentile-box" id="end-percentile">🏆 擊敗 100% 位封印師</div>
+                <div class="percentile-box" id="end-percentile">🏆 擊敗了全服 100% 的玩家</div>
                 <div id="end-msg" style="margin-top:5px; font-size:0.9rem; color:#555;"></div>
             </div>
 
@@ -232,7 +232,7 @@
         let longPressTimer, pickerFace = 'B'; 
 
         // --- 提示系統變數 (改版) ---
-        let hintPenaltyTotal = 0;  // 改為追蹤實際被扣掉的分數
+        let hintPenaltyTotal = 0;  // 追蹤實際被扣掉的分數
         let activeHint = null;     // 記錄目前要顯示的提示虛影 {index, id, face, rot}
 
         // --- 沉浸式教學系統 ---
@@ -247,7 +247,7 @@
             $('btn-next').style.display = 'none';
             document.querySelector('.instruction-bar').style.display = 'none';
             
-            $('game-title').innerText = "新手聖典";
+            $('game-title').innerText = "新手引導";
             $('intro-tut-msg').style.display = 'block';
             $('grid-container').classList.remove('win-glow');
             isRoundWon = false;
@@ -277,10 +277,10 @@
             introTutPhase = phase;
             const msgBox = $('intro-tut-msg');
             if (phase === 1) {
-                msgBox.innerHTML = `偉大的封印師，準備好色獨封印的挑戰嗎？！<br><span style="color:#e74c3c">紅色方框</span>指定魔石可旋轉但不能翻面，<br><span style="color:#3498db">藍色方框</span>自選魔石可旋轉和翻面，<br>點選 <span style="color:#3498db; font-weight:bold;">藍色方框</span> 來加入魔石。`;
+                msgBox.innerHTML = `偉大的封印師，準備好色獨封印的挑戰嗎？！<br><span style="color:#e74c3c">紅色方框</span>指定魔石可旋轉但不能翻面，<br><span style="color:#3498db">藍色方框</span>自選魔石可旋轉和翻面，<br>點擊 <span style="color:#3498db; font-weight:bold;">藍色方框</span> 加入魔石來完成方陣。`;
                 renderGameGrid();
             } else if (phase === 2) {
-                msgBox.innerHTML = `翻面可看背面，取消回到方陣，<br>請點選 <span style="color:#f1c40f; font-weight:bold;">魔石</span> 加入方陣！`;
+                msgBox.innerHTML = `翻面可看魔石背面，取消可回到魔石方陣，<br>請點選 <span style="color:#f1c40f; font-weight:bold;">魔石</span> 加入魔石方陣！`;
             } else if (phase === 3) {
                 msgBox.innerHTML = `請點擊 <span style="color:#f1c40f; font-weight:bold;">魔石邊緣</span> 來旋轉，<br>請點擊 <span style="color:#f1c40f; font-weight:bold;">魔石中間</span> 來翻面，<br>所有行列寶石不同就可完成封印。`;
                 renderGameGrid(); 
@@ -364,7 +364,16 @@
                         currentLayoutConfig[pos-1] = { type: 'FIXED', id: b.id, face: b.f };
                     } else { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; }
                 });
-                if (checkSolvability()) solvable = true;
+                // Check if the generated setup is solvable initially
+                let tempBoard = Array(9).fill(null);
+                let tempUsed = new Set();
+                for(let i=0; i<9; i++) {
+                    if (currentLayoutConfig[i].type === 'FIXED') {
+                        tempBoard[i] = { id: currentLayoutConfig[i].id, face: currentLayoutConfig[i].face, rot: 0, isFixed: true };
+                        tempUsed.add(currentLayoutConfig[i].id);
+                    }
+                }
+                if (solveHintStep(0, tempBoard, tempUsed)) solvable = true;
                 attempts++;
             }
             if (!solvable) return alert("生成失敗");
@@ -412,13 +421,7 @@
             let btnSolve = $('btn-solve'), levelInfo = $('level-info');
             btnSolve.innerText = "⌛ 挑戰失敗"; btnSolve.className = "action-btn failed";
             $('btn-reset').style.display = 'none'; $('btn-hint').style.display = 'none';
-            levelInfo.innerText = "時間耗盡，本關不計分"; levelInfo.style.color = "#e74c3c";
-        }
-
-        function checkSolvability() {
-            let solverBoard = Array(9).fill(null), usedIDs = new Set();
-            for(let i=0; i<9; i++) if (currentLayoutConfig[i].type === 'FIXED') usedIDs.add(currentLayoutConfig[i].id);
-            return solveStep(0, solverBoard, usedIDs, true);
+            levelInfo.innerText = "時間耗盡，自動填入正確解答"; levelInfo.style.color = "#e74c3c";
         }
 
         function calculateTimeSpent() {
@@ -482,7 +485,7 @@
             $('end-modal').style.display = 'flex';
             let maxScore = 0; for(let i=1; i<=6; i++) maxScore += (ROUND_SETTINGS[i].base + ROUND_SETTINGS[i].bonus);
 
-            $('end-player-name').innerText = `[${getRankTitle(totalScore)}] ${playerName} (挑戰 Level ${selectedLevel})`;
+            $('end-player-name').innerText = `[${getRankTitle(totalScore)}] ${playerName} (挑戰 L${selectedLevel})`;
             $('end-score').innerText = `${totalScore} / ${maxScore}`;
             $('end-time').innerText = formatTime(totalTimeSpent);
             
@@ -493,14 +496,14 @@
             const myRankIndex = lbData.findIndex(r => r.date === now), totalPlayers = lbData.length;
             let beatenPct = totalPlayers > 1 ? Math.floor(((totalPlayers - myRankIndex - 1) / totalPlayers) * 100) : 100;
             if (totalPlayers > 1 && myRankIndex === 0) beatenPct = 99;
-            $('end-percentile').innerText = `🏆 擊敗 ${beatenPct}% 位封印師`;
+            $('end-percentile').innerText = `🏆 擊敗了全服 ${beatenPct}% 的玩家`;
 
             const container = $('level-boards');
             container.innerHTML = "";
             for (let i = 1; i <= 6; i++) {
                 let lvlData = lbData.filter(r => r.lvl === i).slice(0, 5);
                 let boardHtml = `<div class="level-board"><div class="level-board-title">LEVEL ${i} 排行榜</div><table class="lb-mini-table">`;
-                if (lvlData.length === 0) boardHtml += `<tr><td style="text-align:center; color:#999; padding:15px 0;">等你挑戰</td></tr>`;
+                if (lvlData.length === 0) boardHtml += `<tr><td style="text-align:center; color:#999; padding:15px 0;">尚無紀錄</td></tr>`;
                 else lvlData.forEach((r, idx) => { boardHtml += `<tr><td class="rank">${idx + 1}</td><td class="name"><span class="title-tag">[${getRankTitle(r.score)}]</span> ${r.name}</td><td class="score-time">${r.score}分 ${formatTime(r.time)}</td></tr>`; });
                 boardHtml += `</table></div>`; container.innerHTML += boardHtml;
             }
@@ -586,7 +589,6 @@
             if (userBoard[index] && !userBoard[index].isFixed && !isRoundWon) { 
                 userBoard[index].face = userBoard[index].face === 'B' ? 'W' : 'B'; 
                 
-                // 【互動即消除提示】
                 if (activeHint && activeHint.index === index) {
                     activeHint = null; 
                     userBoard[index].isHinted = true;
@@ -752,153 +754,64 @@
             }
         }
         
+        // --- 核心演算法：智能繼承求解器 (保留玩家最多心血) ---
+        function getSmartSolution(board) {
+            let validBoard = Array(9).fill(null);
+            let wrongIndex = -1;
+            
+            // 找出第一個導致無解的方塊，將其剔除，但保留後續正確的方塊
+            for (let i = 0; i < 9; i++) {
+                if (board[i]) {
+                    validBoard[i] = { ...board[i] };
+                    
+                    // 如果放下去連最基本的規則都違反了 (例如同一行顏色重複)
+                    if (!isValid(validBoard)) {
+                        if (wrongIndex === -1) wrongIndex = i;
+                        validBoard[i] = null; // 剔除錯誤方塊，讓後面的方塊有機會被保留
+                        continue;
+                    }
+                    
+                    let tempUsed = new Set();
+                    validBoard.forEach(b => { if(b) tempUsed.add(b.id); });
+                    let copy = validBoard.map(b => b ? {...b} : null);
+                    
+                    // 深度運算：如果這顆方塊會導致未來無解 (走進死胡同)
+                    if (!solveHintStep(0, copy, tempUsed)) {
+                        if (wrongIndex === -1) wrongIndex = i;
+                        validBoard[i] = null; // 剔除錯誤方塊
+                    }
+                }
+            }
+            
+            // 拿著已經過濾掉錯誤的「安全盤面」，去算出最終解答
+            let finalSolution = validBoard.map(b => b ? {...b} : null);
+            let finalUsed = new Set();
+            finalSolution.forEach(b => { if(b) finalUsed.add(b.id); });
+            solveHintStep(0, finalSolution, finalUsed); // 補滿剩下的空格
+            
+            return { solution: finalSolution, wrongIndex: wrongIndex };
+        }
+
         // --- 求解與輔助 ---
         function forceSolve(manual = true) {
             clearInterval(timerInterval);
-            let solverBoard = Array(9).fill(null), usedIDs = new Set();
-            for(let i=0; i<9; i++) if (currentLayoutConfig[i].type === 'FIXED') usedIDs.add(currentLayoutConfig[i].id);
+            
+            // 使用智能求解器，確保解答「順著玩家目前的正確思路」
+            let { solution } = getSmartSolution(userBoard);
             
             setTimeout(() => {
-                if (solveStep(0, solverBoard, usedIDs)) {
-                    userBoard = solverBoard; renderGameGrid();
+                if (solution && solution.every((b, i) => currentLayoutConfig[i].type === 'EMPTY' || b !== null)) {
+                    userBoard = solution;
+                    renderGameGrid();
                     $('grid-container').classList.add('win-glow');
                     $('btn-solve').disabled = true; $('btn-reset').disabled = true; $('btn-hint').disabled = true;
                     $('btn-next').style.display = 'inline-block'; $('action-controls').style.display = 'none';
                     isRoundWon = true; isSolverUsed = true;
-                    if (manual) { let lvl = $('level-info'); lvl.innerText = "放棄封印，本關不計分"; lvl.style.color = "#e74c3c"; }
+                    if (manual) { 
+                        let lvl = $('level-info'); lvl.innerText = "放棄，本關不計分"; lvl.style.color = "#e74c3c"; 
+                    }
                 } else { alert("無法封印！"); }
             }, 100);
-        }
-
-        function solveStep(idx, board, usedIDs, dryRun = false) {
-            if (idx >= 9) return true;
-            const config = currentLayoutConfig[idx];
-            if (config.type === 'EMPTY') return solveStep(idx + 1, board, usedIDs, dryRun);
-            if (config.type === 'FIXED') {
-                const { id, face } = config;
-                for (let rot = 0; rot < 4; rot++) {
-                    board[idx] = { id, face, rot, isFixed: true };
-                    if (isValid(board) && solveStep(idx + 1, board, usedIDs, dryRun)) return true;
-                }
-                board[idx] = null; return false;
-            }
-            if (config.type === 'SOLVE') {
-                for (let id = 1; id <= 9; id++) {
-                    if (!usedIDs.has(id)) {
-                        usedIDs.add(id);
-                        for (let face of ['B', 'W']) {
-                            for (let rot = 0; rot < 4; rot++) {
-                                board[idx] = { id, face, rot, isFixed: false };
-                                if (isValid(board) && solveStep(idx + 1, board, usedIDs, dryRun)) return true;
-                            }
-                        }
-                        board[idx] = null; usedIDs.delete(id);
-                    }
-                }
-                return false;
-            }
-            return false;
-        }
-
-        // --- 智慧糾錯提示系統 (含動態計分) ---
-        function provideHint() {
-            if (isRoundWon) return;
-
-            if (activeHint) {
-                return; // 如果目前畫面還有提示虛影，忽略多餘的點擊
-            }
-
-            if (timeLeft > 60) {
-                alert("⚠️ 倒數 60 秒才能使用提示！");
-                return;
-            }
-
-            let tempBoard = Array(9).fill(null);
-            let usedIDs = new Set();
-            for (let i = 0; i < 9; i++) {
-                if (userBoard[i]) {
-                    tempBoard[i] = { ...userBoard[i] }; 
-                    usedIDs.add(userBoard[i].id);
-                }
-            }
-
-            let hintFound = false;
-            let targetIdx = -1;
-            let correctBlock = null;
-
-            // 1. 先檢驗目前的盤面是否「還有救」
-            let copyForCheck = tempBoard.map(b => b ? { ...b } : null);
-            let usedForCheck = new Set(usedIDs);
-            
-            if (solveHintStep(0, copyForCheck, usedForCheck)) {
-                // 有救！尋找下一個空格給提示
-                for (let i = 0; i < 9; i++) {
-                    if (currentLayoutConfig[i].type === 'SOLVE' && !userBoard[i]) {
-                        targetIdx = i;
-                        correctBlock = copyForCheck[i];
-                        hintFound = true;
-                        break;
-                    }
-                }
-            } else {
-                // 沒救了！找出造成矛盾的魔石
-                let testBoard = Array(9).fill(null);
-                for (let i = 0; i < 9; i++) {
-                    if (userBoard[i]) {
-                        testBoard[i] = { ...userBoard[i] };
-                        let copyBoard = testBoard.map(b => b ? { ...b } : null);
-                        let copyUsed = new Set();
-                        copyBoard.forEach(b => { if(b) copyUsed.add(b.id); });
-
-                        if (!solveHintStep(0, copyBoard, copyUsed)) {
-                            // 算出這格的正解
-                            let prevBoard = Array(9).fill(null);
-                            let prevUsed = new Set();
-                            for(let j=0; j<i; j++) {
-                                if(userBoard[j]) {
-                                    prevBoard[j] = { ...userBoard[j] };
-                                    prevUsed.add(userBoard[j].id);
-                                }
-                            }
-                            solveHintStep(0, prevBoard, prevUsed); 
-                            
-                            targetIdx = i;
-                            correctBlock = prevBoard[i];
-                            hintFound = true;
-                            
-                            alert("⚠️ 魔石方向錯誤！");
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (hintFound) {
-                // 判定是「加入方塊(扣4分)」還是「調整方向(扣1分)」
-                let penaltyPoints = 4; // 預設為加入或更換方塊
-                let hintMsg = "加入魔石";
-
-                if (userBoard[targetIdx] && 
-                    userBoard[targetIdx].id === correctBlock.id && 
-                    userBoard[targetIdx].face === correctBlock.face) {
-                    penaltyPoints = 1; // ID與正反面都對，只有旋轉角度錯
-                    hintMsg = "旋轉魔石";
-                }
-
-                activeHint = { index: targetIdx, id: correctBlock.id, face: correctBlock.face, rot: correctBlock.rot };
-                hintPenaltyTotal += penaltyPoints; // 累加扣分
-                
-                playSound('action');
-                let config = ROUND_SETTINGS[currentRound];
-                let currentBase = Math.max(0, config.base - hintPenaltyTotal); 
-                let levelInfo = $('level-info');
-                levelInfo.innerText = `💡 提示：${hintMsg} (-${penaltyPoints}分，通關分數降為 ${currentBase}分)`;
-                levelInfo.style.color = "#f39c12";
-
-                renderGameGrid(); 
-            } else {
-                alert("方陣已經填滿且正確囉！");
-            }
         }
 
         function solveHintStep(idx, board, usedIDs) {
@@ -943,6 +856,74 @@
                 return false; 
             }
             return false;
+        }
+
+        // --- 智慧糾錯提示系統 (含動態計分) ---
+        function provideHint() {
+            if (isRoundWon) return;
+
+            if (activeHint) return; // 如果目前畫面還有提示虛影，忽略多餘的點擊
+
+            if (timeLeft > 60) {
+                alert("⚠️ 請在倒數最後 60 秒內再使用提示！");
+                return;
+            }
+
+            // 取得包含玩家正確心血的最終解答與錯誤位置
+            let { solution, wrongIndex } = getSmartSolution(userBoard);
+
+            if (!solution || !solution[0]) {
+                alert("無法生成提示，請確認盤面狀態。");
+                return;
+            }
+
+            let targetIdx = -1;
+            let correctBlock = null;
+            let penaltyPoints = 4;
+            let hintMsg = "加入方塊";
+
+            if (wrongIndex !== -1) {
+                // 有放錯的方塊
+                targetIdx = wrongIndex;
+                correctBlock = solution[targetIdx];
+                
+                // 判定是「加入/更換方塊(扣4分)」還是「調整方向(扣1分)」
+                if (userBoard[targetIdx] && 
+                    userBoard[targetIdx].id === correctBlock.id && 
+                    userBoard[targetIdx].face === correctBlock.face) {
+                    penaltyPoints = 1; 
+                    hintMsg = "調整角度";
+                } else {
+                    penaltyPoints = 4;
+                    hintMsg = userBoard[targetIdx] ? "更換方塊" : "加入方塊";
+                }
+                alert("⚠️ 系統偵測到目前的排法有衝突，已為您用紅框標示需要修正的魔石！");
+            } else {
+                // 盤面正確，只是還沒填完，尋找下一個空格
+                for (let i = 0; i < 9; i++) {
+                    if (currentLayoutConfig[i].type === 'SOLVE' && !userBoard[i]) {
+                        targetIdx = i;
+                        correctBlock = solution[i];
+                        break;
+                    }
+                }
+            }
+
+            if (targetIdx !== -1) {
+                activeHint = { index: targetIdx, id: correctBlock.id, face: correctBlock.face, rot: correctBlock.rot };
+                hintPenaltyTotal += penaltyPoints; // 累加扣分
+                
+                playSound('action');
+                let config = ROUND_SETTINGS[currentRound];
+                let currentBase = Math.max(0, config.base - hintPenaltyTotal); 
+                let levelInfo = $('level-info');
+                levelInfo.innerText = `💡 提示：${hintMsg} (-${penaltyPoints}分，通關分數降為 ${currentBase}分)`;
+                levelInfo.style.color = "#f39c12";
+
+                renderGameGrid(); 
+            } else {
+                alert("方陣已經填滿且正確囉！");
+            }
         }
     </script>
 </body>
