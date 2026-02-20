@@ -176,7 +176,7 @@
         <div class="step-title">步驟 2：選擇封印法陣 (Shapes) 🔯</div>
         
         <div class="level-selector" id="shape-level-buttons">
-            <button class="level-btn" onclick="filterShapesByLevel(1)">Level I</button>
+            <button class="level-btn" onclick="filterShapesByLevel(1)">I</button>
             <button class="level-btn" onclick="filterShapesByLevel(2)">II</button>
             <button class="level-btn" onclick="filterShapesByLevel(3)">III</button>
             <button class="level-btn" onclick="filterShapesByLevel(4)">IV</button>
@@ -195,109 +195,10 @@
 
     <script>
         // --- 1. 資料庫：基本方塊定義 ---
-        const BLOCKS = {
-            1: { B: [[1,2],[3,4]], W: [[4,3],[6,5]] },
-            2: { B: [[3,4],[5,6]], W: [[6,5],[2,1]] },
-            3: { B: [[5,6],[1,2]], W: [[2,1],[4,3]] },
-            4: { B: [[2,3],[5,6]], W: [[5,4],[2,1]] },
-            5: { B: [[4,5],[1,2]], W: [[1,6],[4,3]] },
-            6: { B: [[6,1],[3,4]], W: [[3,2],[6,5]] },
-            7: { B: [[4,5],[6,1]], W: [[1,6],[3,2]] },
-            8: { B: [[6,1],[2,3]], W: [[3,2],[5,4]] },
-            9: { B: [[2,3],[4,5]], W: [[5,4],[1,6]] }
-        };
-
-        // --- 資料庫：魔石組合 (Target Tiles) ---
-        const TARGET_TILES = [
-            // Level I
-            { id: 1,  level: 1, blocks: [{id:1, f:'B'}, {id:5, f:'B'}, {id:8, f:'W'}] },
-            { id: 2,  level: 1, blocks: [{id:2, f:'B'}, {id:9, f:'B'}, {id:6, f:'W'}] },
-            { id: 3,  level: 1, blocks: [{id:6, f:'B'}, {id:1, f:'W'}, {id:7, f:'B'}] },
-            { id: 4,  level: 1, blocks: [{id:9, f:'W'}, {id:3, f:'B'}, {id:4, f:'W'}] },
-            { id: 5,  level: 1, blocks: [{id:2, f:'W'}, {id:7, f:'W'}, {id:4, f:'B'}] },
-            { id: 6,  level: 1, blocks: [{id:5, f:'W'}, {id:3, f:'W'}, {id:8, f:'B'}] },
-            // Level II
-            { id: 7,  level: 2, blocks: [{id:5, f:'B'}, {id:3, f:'B'}, {id:9, f:'W'}] },
-            { id: 8,  level: 2, blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:8, f:'B'}] },
-            { id: 9,  level: 2, blocks: [{id:4, f:'B'}, {id:8, f:'B'}, {id:2, f:'W'}] },
-            { id: 10, level: 2, blocks: [{id:3, f:'B'}, {id:6, f:'W'}, {id:7, f:'W'}] },
-            { id: 11, level: 2, blocks: [{id:9, f:'W'}, {id:6, f:'B'}, {id:1, f:'W'}] },
-            { id: 12, level: 2, blocks: [{id:4, f:'W'}, {id:2, f:'W'}, {id:7, f:'B'}] },
-            // Level III
-            { id: 13, level: 3, blocks: [{id:3, f:'B'}, {id:4, f:'B'}, {id:7, f:'W'}] },
-            { id: 14, level: 3, blocks: [{id:9, f:'B'}, {id:4, f:'W'}, {id:1, f:'B'}] },
-            { id: 15, level: 3, blocks: [{id:7, f:'B'}, {id:5, f:'B'}, {id:2, f:'W'}] },
-            { id: 16, level: 3, blocks: [{id:6, f:'W'}, {id:8, f:'W'}, {id:2, f:'B'}] },
-            { id: 17, level: 3, blocks: [{id:5, f:'B'}, {id:8, f:'W'}, {id:3, f:'W'}] },
-            { id: 18, level: 3, blocks: [{id:1, f:'W'}, {id:9, f:'B'}, {id:6, f:'W'}] },
-            // Level IV
-            { id: 19, level: 4, blocks: [{id:2, f:'B'}, {id:6, f:'B'}, {id:9, f:'W'}] },
-            { id: 20, level: 4, blocks: [{id:7, f:'B'}, {id:4, f:'W'}, {id:3, f:'B'}] },
-            { id: 21, level: 4, blocks: [{id:9, f:'B'}, {id:4, f:'B'}, {id:1, f:'W'}] },
-            { id: 22, level: 4, blocks: [{id:1, f:'B'}, {id:8, f:'W'}, {id:4, f:'W'}] },
-            { id: 23, level: 4, blocks: [{id:9, f:'W'}, {id:5, f:'B'}, {id:2, f:'W'}] },
-            { id: 24, level: 4, blocks: [{id:8, f:'B'}, {id:6, f:'W'}, {id:2, f:'W'}] },
-            // Level V
-            { id: 25, level: 5, blocks: [{id:1, f:'B'}, {id:6, f:'B'}, {id:7, f:'W'}] },
-            { id: 26, level: 5, blocks: [{id:3, f:'B'}, {id:8, f:'B'}, {id:6, f:'W'}] },
-            { id: 27, level: 5, blocks: [{id:5, f:'B'}, {id:9, f:'B'}, {id:3, f:'W'}] },
-            { id: 28, level: 5, blocks: [{id:1, f:'B'}, {id:5, f:'W'}, {id:7, f:'W'}] },
-            { id: 29, level: 5, blocks: [{id:8, f:'W'}, {id:4, f:'B'}, {id:1, f:'W'}] },
-            { id: 30, level: 5, blocks: [{id:3, f:'W'}, {id:4, f:'W'}, {id:9, f:'B'}] },
-            // Level VI
-            { id: 31, level: 6, blocks: [{id:4, f:'B'}, {id:2, f:'B'}, {id:8, f:'W'}] },
-            { id: 32, level: 6, blocks: [{id:2, f:'B'}, {id:5, f:'W'}, {id:7, f:'B'}] },
-            { id: 33, level: 6, blocks: [{id:8, f:'B'}, {id:6, f:'B'}, {id:3, f:'W'}] },
-            { id: 34, level: 6, blocks: [{id:5, f:'W'}, {id:2, f:'B'}, {id:9, f:'W'}] },
-            { id: 35, level: 6, blocks: [{id:3, f:'W'}, {id:7, f:'W'}, {id:6, f:'B'}] },
-            { id: 36, level: 6, blocks: [{id:7, f:'B'}, {id:5, f:'W'}, {id:1, f:'W'}] }
-        ];
-
-        // --- 資料庫：封印法陣 (Shapes) 更新版 ---
-        const SHAPES = [
-            // Level I
-            { id: 1, name: "No.001", level: 1, active: [2,3,4,7,9], targets: [2,4,9] },
-            { id: 2, name: "No.002", level: 1, active: [2,4,6,7,8], targets: [2,6,7] },
-            { id: 3, name: "No.003", level: 1, active: [1,3,5,8,9], targets: [1,5,9] },
-            { id: 4, name: "No.004", level: 1, active: [1,3,4,8,9], targets: [3,4,8] },
-            { id: 5, name: "No.005", level: 1, active: [1,2,4,6,8], targets: [1,6,8] },
-            { id: 6, name: "No.006", level: 1, active: [1,3,5,7,8], targets: [3,5,7] },
-            // Level II
-            { id: 7, name: "No.007", level: 2, active: [2,4,5,8,9], targets: [2,4,9] },
-            { id: 8, name: "No.008", level: 2, active: [2,6,7,8,9], targets: [2,6,7] },
-            { id: 9, name: "No.009", level: 2, active: [1,2,5,8,9], targets: [1,5,9] },
-            { id: 10, name: "No.010", level: 2, active: [2,3,4,5,8], targets: [3,4,8] },
-            { id: 11, name: "No.011", level: 2, active: [1,2,3,6,8], targets: [1,6,8] },
-            { id: 12, name: "No.012", level: 2, active: [2,3,5,7,8], targets: [3,5,7] },
-            // Level III
-            { id: 13, name: "No.013", level: 3, active: [2,4,6,7,8,9], targets: [2,4,9] },
-            { id: 14, name: "No.014", level: 3, active: [2,4,5,6,7,9], targets: [2,6,7] },
-            { id: 15, name: "No.015", level: 3, active: [1,3,5,7,8,9], targets: [1,5,9] },
-            { id: 16, name: "No.016", level: 3, active: [2,3,4,6,8,9], targets: [3,4,8] },
-            { id: 17, name: "No.017", level: 3, active: [1,2,5,6,7,8], targets: [1,6,8] },
-            { id: 18, name: "No.018", level: 3, active: [1,3,5,6,7,9], targets: [3,5,7] },
-            // Level IV
-            { id: 19, name: "No.019", level: 4, active: [2,4,5,6,8,9], targets: [2,4,9] },
-            { id: 20, name: "No.020", level: 4, active: [2,5,6,7,8,9], targets: [2,6,7] },
-            { id: 21, name: "No.021", level: 4, active: [1,2,3,5,6,9], targets: [1,5,9] },
-            { id: 22, name: "No.022", level: 4, active: [2,3,4,5,6,8], targets: [3,4,8] },
-            { id: 23, name: "No.023", level: 4, active: [1,2,3,5,6,8], targets: [1,6,8] },
-            { id: 24, name: "No.024", level: 4, active: [1,2,3,4,5,7], targets: [3,5,7] },
-            // Level V
-            { id: 25, name: "No.025", level: 5, active: [1,2,4,5,6,8,9], targets: [2,4,9] },
-            { id: 26, name: "No.026", level: 5, active: [1,2,4,6,7,8,9], targets: [2,6,7] },
-            { id: 27, name: "No.027", level: 5, active: [1,3,5,6,7,8,9], targets: [1,5,9] },
-            { id: 28, name: "No.028", level: 5, active: [2,3,4,5,6,7,8], targets: [3,4,8] },
-            { id: 29, name: "No.029", level: 5, active: [1,2,3,4,6,8,9], targets: [1,6,8] },
-            { id: 30, name: "No.030", level: 5, active: [1,3,4,5,7,8,9], targets: [3,5,7] },
-            // Level VI
-            { id: 31, name: "No.031", level: 6, active: [1,2,3,4,6,7,9], targets: [2,4,9] },
-            { id: 32, name: "No.032", level: 6, active: [2,4,5,6,7,8,9], targets: [2,6,7] },
-            { id: 33, name: "No.033", level: 6, active: [1,3,4,5,6,7,9], targets: [1,5,9] },
-            { id: 34, name: "No.034", level: 6, active: [1,2,3,4,7,8,9], targets: [3,4,8] },
-            { id: 35, name: "No.035", level: 6, active: [1,2,4,5,6,7,8], targets: [1,6,8] },
-            { id: 36, name: "No.036", level: 6, active: [1,2,3,5,7,8,9], targets: [3,5,7] }
-        ];
+        const BLOCKS={1:{B:[[1,2],[3,4]],W:[[5,6],[3,4]]},2:{B:[[4,6],[3,5]],W:[[2,6],[1,5]]},3:{B:[[2,1],[6,5]],W:[[3,4],[1,2]]},4:{B:[[5,2],[6,3]],W:[[4,1],[5,2]]},5:{B:[[4,5],[1,2]],W:[[3,4],[6,1]]},6:{B:[[1,4],[6,3]],W:[[6,3],[5,2]]},7:{B:[[1,6],[5,4]],W:[[2,3],[6,1]]},8:{B:[[2,6],[3,1]],W:[[2,4],[3,5]]},9:{B:[[2,3],[4,5]],W:[[6,1],[4,5]]}};
+        const TARGET_TILES=[{id:1,blocks:[{id:1,f:'B'},{id:5,f:'B'},{id:9,f:'B'}]},{id:2,blocks:[{id:2,f:'B'},{id:6,f:'B'},{id:7,f:'B'}]},{id:3,blocks:[{id:3,f:'B'},{id:4,f:'B'},{id:8,f:'B'}]},{id:4,blocks:[{id:3,f:'B'},{id:5,f:'B'},{id:7,f:'B'}]},{id:5,blocks:[{id:1,f:'B'},{id:6,f:'B'},{id:8,f:'B'}]},{id:6,blocks:[{id:2,f:'B'},{id:4,f:'B'},{id:9,f:'B'}]},{id:7,blocks:[{id:1,f:'B'},{id:5,f:'B'},{id:8,f:'W'}]},{id:8,blocks:[{id:2,f:'B'},{id:9,f:'B'},{id:6,f:'W'}]},{id:9,blocks:[{id:6,f:'B'},{id:1,f:'W'},{id:7,f:'B'}]},{id:10,blocks:[{id:9,f:'W'},{id:3,f:'B'},{id:4,f:'W'}]},{id:11,blocks:[{id:2,f:'W'},{id:7,f:'W'},{id:4,f:'B'}]},{id:12,blocks:[{id:5,f:'W'},{id:3,f:'W'},{id:8,f:'B'}]},{id:13,blocks:[{id:5,f:'B'},{id:3,f:'B'},{id:9,f:'W'}]},{id:14,blocks:[{id:1,f:'B'},{id:5,f:'W'},{id:8,f:'B'}]},{id:15,blocks:[{id:4,f:'B'},{id:8,f:'B'},{id:2,f:'W'}]},{id:16,blocks:[{id:3,f:'B'},{id:6,f:'W'},{id:7,f:'W'}]},{id:17,blocks:[{id:9,f:'W'},{id:6,f:'B'},{id:1,f:'W'}]},{id:18,blocks:[{id:4,f:'W'},{id:2,f:'W'},{id:7,f:'B'}]},{id:19,blocks:[{id:3,f:'B'},{id:4,f:'B'},{id:7,f:'W'}]},{id:20,blocks:[{id:9,f:'B'},{id:4,f:'W'},{id:1,f:'B'}]},{id:21,blocks:[{id:7,f:'B'},{id:5,f:'B'},{id:2,f:'W'}]},{id:22,blocks:[{id:6,f:'W'},{id:8,f:'W'},{id:2,f:'B'}]},{id:23,blocks:[{id:5,f:'B'},{id:8,f:'W'},{id:3,f:'W'}]},{id:24,blocks:[{id:1,f:'W'},{id:9,f:'B'},{id:6,f:'W'}]},{id:25,blocks:[{id:2,f:'B'},{id:6,f:'B'},{id:9,f:'W'}]},{id:26,blocks:[{id:7,f:'B'},{id:4,f:'W'},{id:3,f:'B'}]},{id:27,blocks:[{id:9,f:'B'},{id:4,f:'B'},{id:1,f:'W'}]},{id:28,blocks:[{id:1,f:'B'},{id:8,f:'W'},{id:4,f:'W'}]},{id:29,blocks:[{id:9,f:'W'},{id:5,f:'B'},{id:2,f:'W'}]},{id:30,blocks:[{id:8,f:'B'},{id:6,f:'W'},{id:2,f:'W'}]},{id:31,blocks:[{id:1,f:'B'},{id:6,f:'B'},{id:7,f:'W'}]},{id:32,blocks:[{id:3,f:'B'},{id:8,f:'B'},{id:6,f:'W'}]},{id:33,blocks:[{id:5,f:'B'},{id:9,f:'B'},{id:3,f:'W'}]},{id:34,blocks:[{id:1,f:'B'},{id:5,f:'W'},{id:7,f:'W'}]},{id:35,blocks:[{id:8,f:'W'},{id:4,f:'B'},{id:1,f:'W'}]},{id:36,blocks:[{id:3,f:'W'},{id:4,f:'W'},{id:9,f:'B'}]},{id:37,blocks:[{id:4,f:'B'},{id:2,f:'B'},{id:8,f:'W'}]},{id:38,blocks:[{id:2,f:'B'},{id:5,f:'W'},{id:7,f:'B'}]},{id:39,blocks:[{id:8,f:'B'},{id:6,f:'B'},{id:3,f:'W'}]},{id:40,blocks:[{id:5,f:'W'},{id:2,f:'B'},{id:9,f:'W'}]},{id:41,blocks:[{id:3,f:'W'},{id:7,f:'W'},{id:6,f:'B'}]},{id:42,blocks:[{id:7,f:'B'},{id:5,f:'W'},{id:1,f:'W'}]},{id:43,blocks:[{id:1,f:'W'},{id:5,f:'W'},{id:9,f:'W'}]},{id:44,blocks:[{id:2,f:'W'},{id:6,f:'W'},{id:7,f:'W'}]},{id:45,blocks:[{id:3,f:'W'},{id:4,f:'W'},{id:8,f:'W'}]},{id:46,blocks:[{id:3,f:'W'},{id:5,f:'W'},{id:7,f:'W'}]},{id:47,blocks:[{id:1,f:'W'},{id:6,f:'W'},{id:8,f:'W'}]},{id:48,blocks:[{id:2,f:'W'},{id:4,f:'W'},{id:9,f:'W'}]}];
+        const SHAPES=[{id:1,name:"No.001",active:[2,3,4,9],targets:[2,4,9]},{id:2,name:"No.002",active:[2,4,6,7],targets:[2,6,7]},{id:3,name:"No.003",active:[1,3,5,9],targets:[1,5,9]},{id:4,name:"No.004",active:[1,3,4,8],targets:[3,4,8]},{id:5,name:"No.005",active:[1,2,6,8],targets:[1,6,8]},{id:6,name:"No.006",active:[1,3,5,7],targets:[3,5,7]},{id:7,name:"No.007",active:[2,4,7,9],targets:[2,4,9]},{id:8,name:"No.008",active:[2,6,7,8],targets:[2,6,7]},{id:9,name:"No.009",active:[1,5,8,9],targets:[1,5,9]},{id:10,name:"No.010",active:[3,4,8,9],targets:[3,4,8]},{id:11,name:"No.011",active:[1,4,6,8],targets:[1,6,8]},{id:12,name:"No.012",active:[3,5,7,8],targets:[3,5,7]},{id:13,name:"No.013",active:[2,3,4,7,9],targets:[2,4,9]},{id:14,name:"No.014",active:[2,4,6,7,8],targets:[2,6,7]},{id:15,name:"No.015",active:[1,3,5,8,9],targets:[1,5,9]},{id:16,name:"No.016",active:[1,3,4,8,9],targets:[3,4,8]},{id:17,name:"No.017",active:[1,2,4,6,8],targets:[1,6,8]},{id:18,name:"No.018",active:[1,3,5,7,8],targets:[3,5,7]},{id:19,name:"No.019",active:[2,4,5,8,9],targets:[2,4,9]},{id:20,name:"No.020",active:[2,6,7,8,9],targets:[2,6,7]},{id:21,name:"No.021",active:[1,2,5,8,9],targets:[1,5,9]},{id:22,name:"No.022",active:[2,3,4,5,8],targets:[3,4,8]},{id:23,name:"No.023",active:[1,2,3,6,8],targets:[1,6,8]},{id:24,name:"No.024",active:[2,3,5,7,8],targets:[3,5,7]},{id:25,name:"No.025",active:[2,4,6,7,8,9],targets:[2,4,9]},{id:26,name:"No.026",active:[2,4,5,6,7,9],targets:[2,6,7]},{id:27,name:"No.027",active:[1,3,5,7,8,9],targets:[1,5,9]},{id:28,name:"No.028",active:[2,3,4,6,8,9],targets:[3,4,8]},{id:29,name:"No.029",active:[1,2,5,6,7,8],targets:[1,6,8]},{id:30,name:"No.030",active:[1,3,5,6,7,9],targets:[3,5,7]},{id:31,name:"No.031",active:[2,4,5,6,8,9],targets:[2,4,9]},{id:32,name:"No.032",active:[2,5,6,7,8,9],targets:[2,6,7]},{id:33,name:"No.033",active:[1,2,3,5,6,9],targets:[1,5,9]},{id:34,name:"No.034",active:[2,3,4,5,6,8],targets:[3,4,8]},{id:35,name:"No.035",active:[1,2,3,5,6,8],targets:[1,6,8]},{id:36,name:"No.036",active:[1,2,3,4,5,7],targets:[3,5,7]},{id:37,name:"No.037",active:[1,2,4,5,6,8,9],targets:[2,4,9]},{id:38,name:"No.038",active:[1,2,4,6,7,8,9],targets:[2,6,7]},{id:39,name:"No.039",active:[1,3,5,6,7,8,9],targets:[1,5,9]},{id:40,name:"No.040",active:[2,3,4,5,6,7,8],targets:[3,4,8]},{id:41,name:"No.041",active:[1,2,3,4,6,8,9],targets:[1,6,8]},{id:42,name:"No.042",active:[1,3,4,5,7,8,9],targets:[3,5,7]},{id:43,name:"No.043",active:[1,2,3,4,6,7,9],targets:[2,4,9]},{id:44,name:"No.044",active:[2,4,5,6,7,8,9],targets:[2,6,7]},{id:45,name:"No.045",active:[1,3,4,5,6,7,9],targets:[1,5,9]},{id:46,name:"No.046",active:[1,2,3,4,7,8,9],targets:[3,4,8]},{id:47,name:"No.047",active:[1,2,4,5,6,7,8],targets:[1,6,8]},{id:48,name:"No.048",active:[1,2,3,5,7,8,9],targets:[3,5,7]},{id:49,name:"No.049",active:[2,3,4,5,6,7,8,9],targets:[2,4,9]},{id:50,name:"No.050",active:[1,2,3,4,6,7,8,9],targets:[2,6,7]},{id:51,name:"No.051",active:[1,3,4,5,6,7,8,9],targets:[1,5,9]},{id:52,name:"No.052",active:[1,2,3,4,5,6,8,9],targets:[3,4,8]},{id:53,name:"No.053",active:[1,2,3,4,6,7,8,9],targets:[1,6,8]},{id:54,name:"No.054",active:[1,2,3,5,6,7,8,9],targets:[3,5,7]},{id:55,name:"No.055",active:[1,2,3,5,6,7,8,9],targets:[2,4,9]},{id:56,name:"No.056",active:[2,4,5,6,7,8,9],targets:[2,6,7]},{id:57,name:"No.057",active:[1,3,4,5,6,7,9],targets:[1,5,9]},{id:58,name:"No.058",active:[1,2,3,4,7,8,9],targets:[3,4,8]},{id:59,name:"No.059",active:[1,2,4,5,6,7,8],targets:[1,6,8]},{id:60,name:"No.060",active:[1,2,3,5,7,8,9],targets:[3,5,7]},{id:61,name:"No.061",active:[1,2,3,4,5,6,7,8,9],targets:[2,4,9]},{id:62,name:"No.062",active:[1,2,3,4,5,6,7,8,9],targets:[2,6,7]},{id:63,name:"No.063",active:[1,2,3,4,5,6,7,8,9],targets:[1,5,9]},{id:64,name:"No.064",active:[1,2,3,4,5,6,7,8,9],targets:[3,4,8]},{id:65,name:"No.065",active:[1,2,3,4,5,6,7,8,9],targets:[1,6,8]},{id:66,name:"No.066",active:[1,2,3,4,5,6,7,8,9],targets:[3,5,7]},{id:67,name:"No.067",active:[1,2,3,4,5,6,7,8,9],targets:[2,4,9]},{id:68,name:"No.068",active:[1,2,3,4,5,6,7,8,9],targets:[2,6,7]},{id:69,name:"No.069",active:[1,2,3,4,5,6,7,8,9],targets:[1,5,9]},{id:70,name:"No.070",active:[1,2,3,4,5,6,7,8,9],targets:[3,4,8]},{id:71,name:"No.071",active:[1,2,3,4,5,6,7,8,9],targets:[1,6,8]},{id:72,name:"No.072",active:[1,2,3,4,5,6,7,8,9],targets:[3,5,7]}];
+        
 
         // 全域變數
         let currentTileID = 1;  
@@ -640,4 +541,5 @@
         init();
     </script>
 </body>
+
 </html>
