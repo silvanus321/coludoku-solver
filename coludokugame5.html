@@ -534,23 +534,31 @@
         }
 
         function rotateBlock(index) { 
-            if (introTutPhase === 3 && userBoard[index] && userBoard[index].id === 2) {
-                userBoard[index].rot = (userBoard[index].rot + 1) % 4; playSound('action'); renderGameGrid();
-                setIntroPhase(4); // 旋轉一次直接觸發勝利結局
-                return;
-            } else if (introTutPhase > 0) return; // 教學鎖定其他旋轉
-
-            if (userBoard[index] && !isRoundWon) { userBoard[index].rot = (userBoard[index].rot + 1) % 4; playSound('action'); renderGameGrid(); } 
+            if (userBoard[index] && !isRoundWon) { 
+                userBoard[index].rot = (userBoard[index].rot + 1) % 4; 
+                playSound('action'); 
+                renderGameGrid(); 
+            } 
         }
 
         function flipBlock(index) { 
-            if (introTutPhase > 0) return; // 教學鎖定禁止翻面
-            if (userBoard[index] && !userBoard[index].isFixed && !isRoundWon) { userBoard[index].face = userBoard[index].face === 'B' ? 'W' : 'B'; playSound('action'); renderGameGrid(); } 
+            if (userBoard[index] && !userBoard[index].isFixed && !isRoundWon) { 
+                userBoard[index].face = userBoard[index].face === 'B' ? 'W' : 'B'; 
+                playSound('action'); 
+                renderGameGrid(); 
+            } 
         }
 
         function clearBlock(index) { 
-            if (introTutPhase > 0) return; // 教學鎖定禁止收回
-            if (isRoundWon) return; userBoard[index] = null; playSound('action'); renderGameGrid(); 
+            if (isRoundWon) return; 
+            userBoard[index] = null; 
+            playSound('action'); 
+            
+            // 【新增邏輯】如果玩家在階段三把剛放進去的魔石收回了，提示文字要退回階段一
+            if (introTutPhase === 3) {
+                setIntroPhase(1);
+            }            
+            renderGameGrid(); 
         }
         
         function getAvailableBlocks() { const used = new Set(); userBoard.forEach(b => { if(b) used.add(b.id); }); return [1,2,3,4,5,6,7,8,9].filter(id => !used.has(id)); }
@@ -648,9 +656,19 @@
             if (currentValidLineCount > lastValidLineCount) playSound('line');
             lastValidLineCount = currentValidLineCount;
 
-            const isFull = userBoard.every((b, i) => currentLayoutConfig[i].type === 'EMPTY' || b !== null);
+                        const isFull = userBoard.every((b, i) => currentLayoutConfig[i].type === 'EMPTY' || b !== null);
             if (isFull && isValid(userBoard) && !isRoundWon) {
-                isRoundWon = true; clearInterval(timerInterval); playSound('win');
+                isRoundWon = true; 
+                clearInterval(timerInterval); 
+                
+                // 【新增邏輯】攔截教學模式的勝利，交給劇本處理
+                if (introTutPhase > 0) {
+                    setIntroPhase(4);
+                    return; // 中斷後續的一般計分與按鈕顯示
+                }
+
+                // 一般遊戲勝利的邏輯
+                playSound('win');
                 const spent = Math.floor((Date.now() - roundStartTime) / 1000);
                 if (spent <= 60) {
                     setTimeout(() => playSound('bonus'), 800);
@@ -660,7 +678,6 @@
                 $('grid-container').classList.add('win-glow');
                 $('btn-next').style.display = 'inline-block'; $('action-controls').style.display = 'none'; 
             }
-        }
 
         // --- 求解與輔助 ---
         function forceSolve(manual = true) {
@@ -711,4 +728,5 @@
         }
     </script>
 </body>
+
 </html>
