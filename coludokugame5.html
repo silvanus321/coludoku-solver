@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>色獨封印師 (2.0 分級版 + 提示系統)</title>
+    <title>色獨封印師 (2.0 虛影提示版)</title>
     <style>
         /* --- 1. 基礎設定 --- */
         body { font-family: "Microsoft JhengHei", Arial, sans-serif; background-color: #2c3e50; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; user-select: none; -webkit-user-select: none; touch-action: manipulation; color: white; min-height: 100vh; }
@@ -37,13 +37,10 @@
         .block { background-color: #ecf0f1; border: 2px solid transparent; position: relative; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; aspect-ratio: 1 / 1; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .block.fixed { border-color: #c0392b; background-color: #fadbd8; }
         .block.user-placed { border-color: #2980b9; }
-        
-        /* 提示專屬特效 */
-        .block.hint-glow { border-color: #f39c12 !important; box-shadow: 0 0 15px #f39c12; animation: hintPulse 1.5s infinite; }
-        @keyframes hintPulse { 0%, 100% { box-shadow: 0 0 5px #f39c12; } 50% { box-shadow: 0 0 20px #f39c12; } }
 
         .block-image { width: 100%; height: 100%; object-fit: contain; transition: transform 0.2s ease; }
-        .empty-slot { background-color: rgba(0,0,0,0.2); color: #7f8c8d; font-size: 2rem; cursor: pointer; display: flex; justify-content: center; align-items: center; border: 2px dashed rgba(255,255,255,0.1); }
+        .empty-slot { background-color: rgba(0,0,0,0.2); color: #7f8c8d; font-size: 2rem; cursor: pointer; display: flex; justify-content: center; align-items: center; border: 2px dashed rgba(255,255,255,0.1); border-radius: 6px; position: relative; overflow: hidden; }
+        
         .zone-edge { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 11; }
         .zone-center { position: absolute; top: 20%; left: 20%; width: 60%; height: 60%; z-index: 12; border-radius: 50%; }
 
@@ -231,6 +228,10 @@
         let timerInterval, timeLeft = 0, currentTotalTime = 0, lastValidLineCount = 0;
         let longPressTimer, pickerFace = 'B'; 
 
+        // --- 提示系統變數 ---
+        let roundHintCount = 0; 
+        let activeHint = null; // 記錄目前要顯示的提示虛影 {index, id, face, rot}
+
         // --- 沉浸式教學系統 ---
         let introTutPhase = 0;
 
@@ -330,6 +331,8 @@
 
         function loadRound(round) {
             isRoundWon = false; isSolverUsed = false; lastValidLineCount = 0;
+            roundHintCount = 0; activeHint = null; // 重置提示狀態
+
             $('game-title').innerText = `Round ${round}`;
             $('btn-next').style.display = 'none';
             $('action-controls').style.display = 'flex';
@@ -425,7 +428,11 @@
             const spent = calculateTimeSpent(); 
             if (!isSolverUsed) {
                 const config = ROUND_SETTINGS[currentRound];
-                totalScore += config.base + (spent <= 60 ? config.bonus : 0);
+                // 扣除提示分數，每次扣 6 分，保底 0 分
+                let earnedScore = Math.max(0, config.base - (roundHintCount * 6));
+                
+                // 只有沒用過提示才能拿到速通加分
+                totalScore += earnedScore + (spent <= 60 && roundHintCount === 0 ? config.bonus : 0);
             }
             updateHUD(); currentRound++;
             if (currentRound > 6) showEndScreen(); else loadRound(currentRound);
@@ -439,6 +446,7 @@
         function resetLevel() {
             if (isRoundWon || isSolverUsed) return;
             playSound('reset');
+            activeHint = null; // 重置時也清空提示虛影
             for (let i = 0; i < 9; i++) {
                 if (currentLayoutConfig[i].type === 'FIXED') {
                     userBoard[i].rot = 0; userBoard[i].face = currentLayoutConfig[i].face; 
@@ -513,12 +521,6 @@
                     div.className = 'block';
                     if (block) {
                         div.classList.add(block.isFixed ? 'fixed' : 'user-placed');
-                        
-                        // 載入提示的外觀特效
-                        if (block.isHint) {
-                            div.classList.add('hint-glow');
-                        }
-
                         div.innerHTML = `<img src="images/block_${block.id}_${block.face}.png" class="block-image" style="transform: rotate(${block.rot * 90}deg);" draggable="false">`;
                         const edgeZone = document.createElement('div');
                         edgeZone.className = 'zone-edge'; edgeZone.onclick = (e) => { e.stopPropagation(); rotateBlock(i); };
@@ -533,7 +535,20 @@
                             div.appendChild(centerZone);
                         }
                     } else {
-                        div.innerHTML = '+'; div.className = 'empty-slot'; 
+                        div.className = 'empty-slot'; 
+                        
+                        // --- 渲染提示虛影 ---
+                        if (activeHint && activeHint.index === i) {
+                            // 顯示半透明的魔石圖像，並旋轉到正確角度
+                            div.innerHTML = `<img src="images/block_${activeHint.id}_${activeHint.face}.png" style="width:80%; height:80%; opacity:0.4; transform: rotate(${activeHint.rot * 90}deg); pointer-events:none;">`;
+                            div.style.borderColor = '#f39c12';
+                            div.style.boxShadow = 'inset 0 0 15px rgba(243, 156, 18, 0.4)';
+                        } else {
+                            div.innerHTML = '+'; 
+                            div.style.borderColor = ''; 
+                            div.style.boxShadow = '';
+                        }
+                        
                         if (introTutPhase === 1 && config.type === 'SOLVE') div.classList.add('tut-highlight-blue');
                         div.onclick = () => openPicker(i);
                     }
@@ -546,8 +561,6 @@
         function rotateBlock(index) { 
             if (userBoard[index] && !isRoundWon) { 
                 userBoard[index].rot = (userBoard[index].rot + 1) % 4; 
-                // 若玩家進行旋轉，則移除提示發光狀態
-                if (userBoard[index].isHint) delete userBoard[index].isHint;
                 playSound('action'); 
                 renderGameGrid(); 
             } 
@@ -556,8 +569,6 @@
         function flipBlock(index) { 
             if (userBoard[index] && !userBoard[index].isFixed && !isRoundWon) { 
                 userBoard[index].face = userBoard[index].face === 'B' ? 'W' : 'B'; 
-                // 若玩家進行翻面，則移除提示發光狀態
-                if (userBoard[index].isHint) delete userBoard[index].isHint;
                 playSound('action'); 
                 renderGameGrid(); 
             } 
@@ -598,7 +609,14 @@
                         if (id !== 2) return; 
                         setIntroPhase(3);
                     }
-                    userBoard[pickingSlot] = { id: id, face: pickerFace, rot: 0, isFixed: false }; playSound('action'); closePicker(); renderGameGrid(); 
+                    userBoard[pickingSlot] = { id: id, face: pickerFace, rot: 0, isFixed: false }; 
+                    
+                    // 當玩家手動填入了原本是提示的格子，就清除提示虛影
+                    if (activeHint && activeHint.index === pickingSlot) {
+                        activeHint = null;
+                    }
+
+                    playSound('action'); closePicker(); renderGameGrid(); 
                 };
                 grid.appendChild(div);
             });
@@ -676,7 +694,8 @@
 
                 playSound('win');
                 const spent = Math.floor((Date.now() - roundStartTime) / 1000);
-                if (spent <= 60) {
+                // 只有沒用過提示才能拿到速通加分
+                if (spent <= 60 && roundHintCount === 0) {
                     setTimeout(() => playSound('bonus'), 800);
                     let levelInfo = $('level-info');
                     levelInfo.innerText += ` ⭐ 速通達成 (+${ROUND_SETTINGS[currentRound].bonus}分)`; levelInfo.style.color = "#f1c40f";
@@ -734,11 +753,22 @@
             return false;
         }
 
-        // --- 新增提示系統 (Hint System) ---
+        // --- 虛影提示系統 ---
         function provideHint() {
             if (isRoundWon) return;
 
-            // 複製目前的盤面與已使用的魔石 ID
+            // 如果盤面上已經有虛影但玩家還沒放，不重複扣分
+            if (activeHint && !userBoard[activeHint.index]) {
+                alert("⚠️ 已經有一個提示顯示在盤面上囉，請先跟隨黃色邊框的虛影放入對應魔石並調整角度！");
+                return;
+            }
+
+            // 最後 60 秒限制
+            if (timeLeft > 60) {
+                alert("⚠️ 封印力量尚且充足，請在倒數最後 60 秒內再使用提示！");
+                return;
+            }
+
             let tempBoard = Array(9).fill(null);
             let usedIDs = new Set();
             
@@ -749,40 +779,47 @@
                 }
             }
 
-            // 利用新的提示求解器推算是否還有解
             if (!solveHintStep(0, tempBoard, usedIDs)) {
                 alert("⚠️ 目前的排法已經產生矛盾，無法完成封印！\n請先移除部分錯誤的魔石再試試。");
                 return;
             }
 
-            // 尋找第一個還沒填入的解答空格
-            let hintGiven = false;
+            let hintFound = false;
             for (let i = 0; i < 9; i++) {
+                // 找到第一個需要填入的空格
                 if (currentLayoutConfig[i].type === 'SOLVE' && !userBoard[i]) {
-                    userBoard[i] = { ...tempBoard[i], isHint: true, isFixed: false };
-                    hintGiven = true;
+                    // 將解答設定為虛影，等待渲染
+                    activeHint = { 
+                        index: i, 
+                        id: tempBoard[i].id, 
+                        face: tempBoard[i].face, 
+                        rot: tempBoard[i].rot 
+                    };
+                    hintFound = true;
+                    roundHintCount++; // 扣分計數器增加
                     playSound('action');
-                    
-                    // 可選的懲罰機制（目前註解掉，您可以自行打開）
-                    // timeLeft = Math.max(0, timeLeft - 15); 
-                    // updateTimerDisplay(); updateTimeBar();
-                    
                     break;
                 }
             }
 
-            if (hintGiven) {
-                renderGameGrid();
+            if (hintFound) {
+                let config = ROUND_SETTINGS[currentRound];
+                // 每次提示扣 6 分，保底 0 分
+                let currentBase = Math.max(0, config.base - (roundHintCount * 6)); 
+                let levelInfo = $('level-info');
+                levelInfo.innerText = `💡 啟動提示 (通關分數降為 ${currentBase} 分)`;
+                levelInfo.style.color = "#f39c12";
+
+                renderGameGrid(); 
             } else {
                 alert("盤面已經填滿囉！");
             }
         }
 
-        // 專為提示系統設計的回溯求解器，它會保留玩家原本已經填入的格子往下演算
+        // 提示專用的回溯求解器
         function solveHintStep(idx, board, usedIDs) {
             if (idx >= 9) return true;
 
-            // 如果這格玩家已經填寫了，驗證目前的盤面並跳往下一格
             if (board[idx] !== null) {
                 if (!isValid(board)) return false; 
                 return solveHintStep(idx + 1, board, usedIDs);
@@ -800,7 +837,6 @@
                         for (let face of ['B', 'W']) {
                             for (let rot = 0; rot < 4; rot++) {
                                 board[idx] = { id, face, rot, isFixed: false };
-                                // 剪枝判斷：先確定放下去是合法的才繼續深掘
                                 if (isValid(board)) {
                                     if (solveHintStep(idx + 1, board, usedIDs)) return true;
                                 }
