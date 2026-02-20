@@ -268,7 +268,7 @@
             introTutPhase = phase;
             const msgBox = $('intro-tut-msg');
             if (phase === 1) {
-                msgBox.innerHTML = `<br>偉大的封印師，讓所有行列魔石不同完成封印！</span><br><span style="color:#e74c3c">紅色方框</span>內的目標魔石可旋轉但不能翻面，<br>點擊 <span style="color:#3498db; font-weight:bold;">藍色方框</span> 加入2號魔石來完成方陣。`;
+                msgBox.innerHTML = `偉大的封印師，<br>讓所有行列魔石不同完成封印！</span><br><span style="color:#e74c3c">紅色方框</span>內的目標魔石可旋轉但不能翻面，<br>點擊 <span style="color:#3498db; font-weight:bold;">藍色方框</span> 加入2號魔石來完成方陣。`;
                 renderGameGrid();
             } else if (phase === 2) {
                 msgBox.innerHTML = `翻面可看魔石背面，取消可回到魔石方陣，<br>請點選 <span style="color:#f1c40f; font-weight:bold;">2號魔石</span> 加入魔石方陣！`;
