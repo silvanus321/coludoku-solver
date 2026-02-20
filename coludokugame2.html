@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>色獨封印師 (5.0 智能繼承解答版)</title>
+    <title>色獨封印師 (6.0 終極智能解謎版)</title>
     <style>
         /* --- 1. 基礎設定 --- */
         body { font-family: "Microsoft JhengHei", Arial, sans-serif; background-color: #2c3e50; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; user-select: none; -webkit-user-select: none; touch-action: manipulation; color: white; min-height: 100vh; }
@@ -232,8 +232,8 @@
         let longPressTimer, pickerFace = 'B'; 
 
         // --- 提示系統變數 (改版) ---
-        let hintPenaltyTotal = 0;  // 追蹤實際被扣掉的分數
-        let activeHint = null;     // 記錄目前要顯示的提示虛影 {index, id, face, rot}
+        let hintPenaltyTotal = 0;  
+        let activeHint = null;     
 
         // --- 沉浸式教學系統 ---
         let introTutPhase = 0;
@@ -277,12 +277,12 @@
             introTutPhase = phase;
             const msgBox = $('intro-tut-msg');
             if (phase === 1) {
-                msgBox.innerHTML = `偉大的封印師，準備好色獨封印的挑戰嗎？！<br><span style="color:#e74c3c">紅色方框</span>指定魔石可旋轉但不能翻面，<br><span style="color:#3498db">藍色方框</span>自選魔石可旋轉和翻面，<br>點擊 <span style="color:#3498db; font-weight:bold;">藍色方框</span> 加入魔石來完成方陣。`;
+                msgBox.innerHTML = `偉大的封印師，準備好色獨封印的挑戰嗎？！<br><span style="color:#e74c3c">紅色方框</span>指定魔石可旋轉但不能翻面，<br><span style="color:#3498db">藍色方框</span>自選魔石可旋轉和翻面，<br>點擊 <span style="color:#3498db; font-weight:bold;">藍色方框</span> 加入2號魔石來完成方陣。`;
                 renderGameGrid();
             } else if (phase === 2) {
-                msgBox.innerHTML = `翻面可看魔石背面，取消可回到魔石方陣，<br>請點選 <span style="color:#f1c40f; font-weight:bold;">魔石</span> 加入方陣！`;
+                msgBox.innerHTML = `翻面可看魔石背面，取消可回到魔石方陣，<br>請點選 <span style="color:#f1c40f; font-weight:bold;">2號魔石</span> 加入魔石方陣！`;
             } else if (phase === 3) {
-                msgBox.innerHTML = `請點擊 <span style="color:#f1c40f; font-weight:bold;">魔石邊緣</span> 來旋轉，<br>請點擊 <span style="color:#f1c40f; font-weight:bold;">魔石中間</span> 來翻面，<br>所有行列寶石不同就可完成封印。`;
+                msgBox.innerHTML = `請點擊 <span style="color:#f1c40f; font-weight:bold;">魔石邊緣</span>來旋轉，<br>請點擊 <span style="color:#f1c40f; font-weight:bold;">魔石中間</span>來翻面，<br>所有行列寶石不同就可完成封印。`;
                 renderGameGrid(); 
             } else if (phase === 4) {
                 msgBox.innerHTML = `<div style="text-align:center; color:#27ae60; font-weight:bold; font-size:1.3rem;">🎉 恭禧完成色獨封印！</div>`;
@@ -334,7 +334,7 @@
 
         function loadRound(round) {
             isRoundWon = false; isSolverUsed = false; lastValidLineCount = 0;
-            hintPenaltyTotal = 0; activeHint = null; // 重置提示狀態
+            hintPenaltyTotal = 0; activeHint = null; 
 
             $('game-title').innerText = `Round ${round}`;
             $('btn-next').style.display = 'none';
@@ -364,7 +364,7 @@
                         currentLayoutConfig[pos-1] = { type: 'FIXED', id: b.id, face: b.f };
                     } else { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; }
                 });
-                // Check if the generated setup is solvable initially
+                
                 let tempBoard = Array(9).fill(null);
                 let tempUsed = new Set();
                 for(let i=0; i<9; i++) {
@@ -421,7 +421,7 @@
             let btnSolve = $('btn-solve'), levelInfo = $('level-info');
             btnSolve.innerText = "⌛ 挑戰失敗"; btnSolve.className = "action-btn failed";
             $('btn-reset').style.display = 'none'; $('btn-hint').style.display = 'none';
-            levelInfo.innerText = "時間耗盡，公布解答"; levelInfo.style.color = "#e74c3c";
+            levelInfo.innerText = "時間耗盡，自動補完解答"; levelInfo.style.color = "#e74c3c";
         }
 
         function calculateTimeSpent() {
@@ -434,7 +434,6 @@
             const spent = calculateTimeSpent(); 
             if (!isSolverUsed) {
                 const config = ROUND_SETTINGS[currentRound];
-                // 扣除實際被扣除的總提示分數
                 let earnedScore = Math.max(0, config.base - hintPenaltyTotal);
                 totalScore += earnedScore + (spent <= 60 && hintPenaltyTotal === 0 ? config.bonus : 0);
             }
@@ -527,9 +526,9 @@
                         div.classList.add(block.isFixed ? 'fixed' : 'user-placed');
                         div.innerHTML = `<img src="images/block_${block.id}_${block.face}.png" class="block-image" style="transform: rotate(${block.rot * 90}deg);" draggable="false">`;
                         
-                        // --- 糾錯特效：如果目前有警告虛影，疊加在上方 ---
+                        // --- 糾錯特效：半透明紅色警告，不完全遮擋 ---
                         if (activeHint && activeHint.index === i) {
-                            div.innerHTML += `<div style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(44, 62, 80, 0.85); z-index:10; display:flex; justify-content:center; align-items:center; border-radius:6px; border: 2px solid #e74c3c; box-shadow: inset 0 0 15px rgba(231, 76, 60, 0.8); pointer-events:none; animation: pulseRed 1.5s infinite;">
+                            div.innerHTML += `<div style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0, 0, 0, 0.2); z-index:10; display:flex; justify-content:center; align-items:center; border-radius:6px; border: 2px solid #e74c3c; box-shadow: inset 0 0 15px rgba(231, 76, 60, 0.8); pointer-events:none; animation: pulseRed 1.5s infinite;">
                                 <img src="images/block_${activeHint.id}_${activeHint.face}.png" style="width:80%; height:80%; opacity:0.8; transform: rotate(${activeHint.rot * 90}deg); filter: drop-shadow(0 0 5px #f1c40f);">
                             </div>`;
                         }
@@ -569,12 +568,12 @@
             updateGlowsAndWin();
         }
 
-        // --- 互動即消除提示 ---
+        // --- 互動即立刻消除提示，還給玩家乾淨視野 ---
         function rotateBlock(index) { 
             if (userBoard[index] && !isRoundWon) { 
                 userBoard[index].rot = (userBoard[index].rot + 1) % 4; 
                 
-                // 【互動即消除提示】玩家一碰到方塊邊緣旋轉，馬上把虛影關掉，還給玩家清晰視野
+                // 點擊即立刻消除對應的提示
                 if (activeHint && activeHint.index === index) {
                     activeHint = null; 
                     userBoard[index].isHinted = true; 
@@ -589,6 +588,7 @@
             if (userBoard[index] && !userBoard[index].isFixed && !isRoundWon) { 
                 userBoard[index].face = userBoard[index].face === 'B' ? 'W' : 'B'; 
                 
+                // 點擊即立刻消除對應的提示
                 if (activeHint && activeHint.index === index) {
                     activeHint = null; 
                     userBoard[index].isHinted = true;
@@ -620,6 +620,12 @@
                 setIntroPhase(2);
             } else if (introTutPhase > 0) return; 
             
+            // 點擊空格準備選方塊時，立即清除虛影以免擋住視線
+            if (activeHint && activeHint.index === index) {
+                activeHint = null;
+                renderGameGrid();
+            }
+
             pickingSlot = index; pickerFace = 'B'; renderPickerGrid(); $('picker-modal').style.display = 'flex'; 
         }
 
@@ -638,15 +644,8 @@
                         if (id !== 2) return; 
                         setIntroPhase(3);
                     }
-                    
-                    let isThisHinted = false;
-                    // 【互動即消除提示】只要玩家選擇並放入了方塊，虛影就立刻消失
-                    if (activeHint && activeHint.index === pickingSlot) {
-                        isThisHinted = true; 
-                        activeHint = null; // 消除提示讓玩家可以看清楚旋轉狀況
-                    }
 
-                    userBoard[pickingSlot] = { id: id, face: pickerFace, rot: 0, isFixed: false, isHinted: isThisHinted }; 
+                    userBoard[pickingSlot] = { id: id, face: pickerFace, rot: 0, isFixed: false, isHinted: true }; 
                     playSound('action'); closePicker(); renderGameGrid(); 
                 };
                 grid.appendChild(div);
@@ -657,7 +656,7 @@
             if (introTutPhase === 2 && !userBoard[pickingSlot]) setIntroPhase(1); 
         }
 
-        // --- 驗證與光暈 ---
+        // --- 驗證與光暈 (加入絕對的 ID 唯一性檢查) ---
         function getRotatedMatrix(m, times) {
             for (let t = 0; t < times; t++) m = [[m[1][0], m[0][0]], [m[1][1], m[0][1]]];
             return m;
@@ -681,6 +680,15 @@
         }
 
         function isValid(boardState) {
+            // 【終極修復】：強制檢查盤面上的 ID 絕不能重複
+            let seenIDs = new Set();
+            for (let i = 0; i < 9; i++) {
+                if (boardState[i]) {
+                    if (seenIDs.has(boardState[i].id)) return false;
+                    seenIDs.add(boardState[i].id);
+                }
+            }
+
             let grid = getFullGrid(boardState);
             for (let i = 0; i < 6; i++) {
                 let rSet = new Set(), cSet = new Set();
@@ -754,49 +762,52 @@
             }
         }
         
-        // --- 核心演算法：智能繼承求解器 (保留玩家最多心血) ---
+        // --- 核心演算法：智能繼承求解器 (保留玩家最多心血，確保與提示一致) ---
         function getSmartSolution(board) {
             let validBoard = Array(9).fill(null);
             let wrongIndex = -1;
             
-            // 找出第一個導致無解的方塊，將其剔除，但保留後續正確的方塊
             for (let i = 0; i < 9; i++) {
                 if (board[i]) {
                     validBoard[i] = { ...board[i] };
                     
-                    // 如果放下去連最基本的規則都違反了 (例如同一行顏色重複)
                     if (!isValid(validBoard)) {
                         if (wrongIndex === -1) wrongIndex = i;
-                        validBoard[i] = null; // 剔除錯誤方塊，讓後面的方塊有機會被保留
+                        validBoard[i] = null;
                         continue;
                     }
                     
                     let tempUsed = new Set();
+                    // 預先將所有的指定魔石 ID 寫入佔用名單，防止推演時盜用
+                    for(let k=0; k<9; k++) {
+                        if (currentLayoutConfig[k].type === 'FIXED') tempUsed.add(currentLayoutConfig[k].id);
+                    }
                     validBoard.forEach(b => { if(b) tempUsed.add(b.id); });
+                    
                     let copy = validBoard.map(b => b ? {...b} : null);
                     
-                    // 深度運算：如果這顆方塊會導致未來無解 (走進死胡同)
                     if (!solveHintStep(0, copy, tempUsed)) {
                         if (wrongIndex === -1) wrongIndex = i;
-                        validBoard[i] = null; // 剔除錯誤方塊
+                        validBoard[i] = null; 
                     }
                 }
             }
             
-            // 拿著已經過濾掉錯誤的「安全盤面」，去算出最終解答
             let finalSolution = validBoard.map(b => b ? {...b} : null);
             let finalUsed = new Set();
+            for(let k=0; k<9; k++) {
+                if (currentLayoutConfig[k].type === 'FIXED') finalUsed.add(currentLayoutConfig[k].id);
+            }
             finalSolution.forEach(b => { if(b) finalUsed.add(b.id); });
-            solveHintStep(0, finalSolution, finalUsed); // 補滿剩下的空格
+            solveHintStep(0, finalSolution, finalUsed); 
             
             return { solution: finalSolution, wrongIndex: wrongIndex };
         }
 
-        // --- 求解與輔助 ---
         function forceSolve(manual = true) {
             clearInterval(timerInterval);
             
-            // 使用智能求解器，確保解答「順著玩家目前的正確思路」
+            // 使用智能求解器，確保放棄時的解答與提示完美連貫
             let { solution } = getSmartSolution(userBoard);
             
             setTimeout(() => {
@@ -858,18 +869,17 @@
             return false;
         }
 
-        // --- 智慧糾錯提示系統 (含動態計分) ---
+        // --- 智慧糾錯提示系統 ---
         function provideHint() {
             if (isRoundWon) return;
 
-            if (activeHint) return; // 如果目前畫面還有提示虛影，忽略多餘的點擊
+            if (activeHint) return; 
 
             if (timeLeft > 120) {
                 alert("⚠️ 請在倒數最後 120 秒內再使用提示！");
                 return;
             }
 
-            // 取得包含玩家正確心血的最終解答與錯誤位置
             let { solution, wrongIndex } = getSmartSolution(userBoard);
 
             if (!solution || !solution[0]) {
@@ -883,23 +893,20 @@
             let hintMsg = "加入方塊";
 
             if (wrongIndex !== -1) {
-                // 有放錯的方塊
                 targetIdx = wrongIndex;
                 correctBlock = solution[targetIdx];
                 
-                // 判定是「加入/更換方塊(扣4分)」還是「調整方向(扣1分)」
                 if (userBoard[targetIdx] && 
                     userBoard[targetIdx].id === correctBlock.id && 
                     userBoard[targetIdx].face === correctBlock.face) {
                     penaltyPoints = 1; 
-                    hintMsg = "調整角度或翻面";
+                    hintMsg = "調整角度";
                 } else {
                     penaltyPoints = 4;
                     hintMsg = userBoard[targetIdx] ? "更換方塊" : "加入方塊";
                 }
                 alert("⚠️ 系統偵測到目前的排法有衝突，已為您用紅框標示需要修正的魔石！");
             } else {
-                // 盤面正確，只是還沒填完，尋找下一個空格
                 for (let i = 0; i < 9; i++) {
                     if (currentLayoutConfig[i].type === 'SOLVE' && !userBoard[i]) {
                         targetIdx = i;
@@ -911,7 +918,7 @@
 
             if (targetIdx !== -1) {
                 activeHint = { index: targetIdx, id: correctBlock.id, face: correctBlock.face, rot: correctBlock.rot };
-                hintPenaltyTotal += penaltyPoints; // 累加扣分
+                hintPenaltyTotal += penaltyPoints; 
                 
                 playSound('action');
                 let config = ROUND_SETTINGS[currentRound];
