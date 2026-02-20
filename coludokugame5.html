@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>色獨封印師 (2.0 分級版)</title>
+    <title>色獨封印師 (2.0 分級版 + 提示系統)</title>
     <style>
         /* --- 1. 基礎設定 --- */
         body { font-family: "Microsoft JhengHei", Arial, sans-serif; background-color: #2c3e50; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; user-select: none; -webkit-user-select: none; touch-action: manipulation; color: white; min-height: 100vh; }
@@ -34,9 +34,14 @@
         .main-grid.win-glow { box-shadow: 0 0 30px 10px rgba(241, 196, 15, 0.6); border: 2px solid #f1c40f; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { box-shadow: 0 0 15px 5px rgba(241, 196, 15, 0.4); } 50% { box-shadow: 0 0 30px 15px rgba(241, 196, 15, 0.8); } }
 
-        .block { background-color: #ecf0f1; border: 2px solid transparent; position: relative; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; aspect-ratio: 1 / 1; }
+        .block { background-color: #ecf0f1; border: 2px solid transparent; position: relative; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; aspect-ratio: 1 / 1; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .block.fixed { border-color: #c0392b; background-color: #fadbd8; }
         .block.user-placed { border-color: #2980b9; }
+        
+        /* 提示專屬特效 */
+        .block.hint-glow { border-color: #f39c12 !important; box-shadow: 0 0 15px #f39c12; animation: hintPulse 1.5s infinite; }
+        @keyframes hintPulse { 0%, 100% { box-shadow: 0 0 5px #f39c12; } 50% { box-shadow: 0 0 20px #f39c12; } }
+
         .block-image { width: 100%; height: 100%; object-fit: contain; transition: transform 0.2s ease; }
         .empty-slot { background-color: rgba(0,0,0,0.2); color: #7f8c8d; font-size: 2rem; cursor: pointer; display: flex; justify-content: center; align-items: center; border: 2px dashed rgba(255,255,255,0.1); }
         .zone-edge { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 11; }
@@ -51,9 +56,11 @@
         /* --- 4. 選單與按鈕 --- */
         .action-btn { background-color: #27ae60; color: white; border: none; padding: 15px 40px; font-size: 1.1rem; border-radius: 50px; cursor: pointer; margin-top: 25px; width: 80%; transition: all 0.2s; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .action-btn:active { transform: scale(0.95); }
-        .button-group { display: flex; justify-content: space-between; width: 100%; margin-top: 20px; gap: 15px; }
+        .button-group { display: flex; justify-content: space-between; width: 100%; margin-top: 20px; gap: 10px; }
         .action-btn.btn-reset { background-color: #16a085; font-size: 1rem; padding: 10px; flex: 1; margin-top: 0; }
         .action-btn.btn-reset:hover { background-color: #1abc9c; }
+        .action-btn.btn-hint { background-color: #f39c12; font-size: 1rem; padding: 10px; flex: 1; margin-top: 0; }
+        .action-btn.btn-hint:hover { background-color: #e67e22; }
         .action-btn.give-up { background-color: #7f8c8d; font-size: 1rem; padding: 10px; flex: 1; margin-top: 0; }
         .action-btn.give-up:hover { background-color: #95a5a6; }
         .action-btn.failed { background-color: #c0392b; cursor: not-allowed; }
@@ -112,8 +119,8 @@
                 <button class="lvl-btn" onclick="selectLevel(2, this)">LEVEL 2<br><small>Shape 13-24</small></button>
                 <button class="lvl-btn" onclick="selectLevel(3, this)">LEVEL 3<br><small>Shape 25-36</small></button>
                 <button class="lvl-btn" onclick="selectLevel(4, this)">LEVEL 4<br><small>Shape 37-48</small></button>
-<button class="lvl-btn" onclick="selectLevel(5, this)">LEVEL 5<br><small>Shape 49-60</small></button>
-<button class="lvl-btn" onclick="selectLevel(6, this)">LEVEL 6<br><small>Shape 61-72</small></button>
+                <button class="lvl-btn" onclick="selectLevel(5, this)">LEVEL 5<br><small>Shape 49-60</small></button>
+                <button class="lvl-btn" onclick="selectLevel(6, this)">LEVEL 6<br><small>Shape 61-72</small></button>
             </div>
             <input type="text" id="player-name" class="name-input" placeholder="請輸入封印師名號" maxlength="10">
             <button class="action-btn" onclick="startGame()" style="margin-top: 0;">開始挑戰</button>
@@ -141,6 +148,7 @@
         
         <div id="action-controls" class="button-group">
             <button id="btn-reset" class="action-btn btn-reset" onclick="resetLevel()">🔄 重置</button>
+            <button id="btn-hint" class="action-btn btn-hint" onclick="provideHint()">💡 提示</button>
             <button id="btn-solve" class="action-btn give-up" onclick="forceSolve(true)">🏳️ 放棄</button>
         </div>
     </div>
@@ -174,7 +182,7 @@
     </div>
 
     <script>
-        // --- DOM 簡寫助手 (大幅瘦身關鍵) ---
+        // --- DOM 簡寫助手 ---
         const $ = id => document.getElementById(id);
 
         // --- 0. 音效系統 ---
@@ -224,12 +232,10 @@
         let longPressTimer, pickerFace = 'B'; 
 
         // --- 沉浸式教學系統 ---
-        let introTutPhase = 0; // 0: 關閉, 1: 點擊空位, 2: 點擊2號, 3: 旋轉2號
+        let introTutPhase = 0;
 
         function playIntroTutorial() {
             $('start-screen').style.display = 'none';
-            
-            // 隱藏正式遊戲的介面元素
             document.querySelector('.hud').style.display = 'none';
             document.querySelector('.time-bar-container').style.display = 'none';
             $('level-info').style.display = 'none';
@@ -242,7 +248,6 @@
             $('grid-container').classList.remove('win-glow');
             isRoundWon = false;
 
-            // 準備 Shape 1 (ID:1) 與 Tile 1 的預設盤面
             currentLayoutConfig = {};
             for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
             const shape = SHAPES[0], tile = TARGET_TILES[0]; 
@@ -268,19 +273,18 @@
             introTutPhase = phase;
             const msgBox = $('intro-tut-msg');
             if (phase === 1) {
-                msgBox.innerHTML = `偉大的封印師，讓所有行列魔石不同完成封印！<br><span style="color:#e74c3c">紅色方框</span>內的目標魔石可旋轉但不能翻面，<br>點擊 <span style="color:#3498db; font-weight:bold;">藍色方框</span> 加入2號魔石來完成方陣。`;
+                msgBox.innerHTML = `偉大的封印師，準備好色獨封印的挑戰嗎？！<br><span style="color:#e74c3c">紅色方框</span>指定魔石可旋轉但不能翻面，<br><span style="color:#3498db">藍色方框</span>自選魔石可旋轉和翻面，<br>點擊 <span style="color:#3498db; font-weight:bold;">藍色方框</span> 加入2號魔石來完成方陣。`;
                 renderGameGrid();
             } else if (phase === 2) {
                 msgBox.innerHTML = `翻面可看魔石背面，取消可回到魔石方陣，<br>請點選 <span style="color:#f1c40f; font-weight:bold;">2號魔石</span> 加入魔石方陣！`;
             } else if (phase === 3) {
-                msgBox.innerHTML = `點擊中間可翻面魔石，點擊邊緣可旋轉魔石，長按中間可移除魔石重新選擇！<br>請點擊 <span style="color:#f1c40f; font-weight:bold;">2號魔石邊緣</span>旋轉他。`;
+                msgBox.innerHTML = `請點擊 <span style="color:#f1c40f; font-weight:bold;">魔石邊緣</span>來旋轉，<br>請點擊 <span style="color:#f1c40f; font-weight:bold;">魔石中間</span>來翻面，<br>所有行列寶石不同就可完成封印。`;
                 renderGameGrid(); 
             } else if (phase === 4) {
                 msgBox.innerHTML = `<div style="text-align:center; color:#27ae60; font-weight:bold; font-size:1.3rem;">🎉 恭禧完成色獨封印！</div>`;
                 playSound('win');
                 $('grid-container').classList.add('win-glow');
                 
-                // 2.5秒後復原 UI 並回到開始畫面
                 setTimeout(() => {
                     introTutPhase = 0;
                     $('intro-tut-msg').style.display = 'none';
@@ -330,10 +334,11 @@
             $('btn-next').style.display = 'none';
             $('action-controls').style.display = 'flex';
             
-            let btnSolve = $('btn-solve'), btnReset = $('btn-reset');
+            let btnSolve = $('btn-solve'), btnReset = $('btn-reset'), btnHint = $('btn-hint');
             btnSolve.style.display = 'block'; btnSolve.disabled = false;
             btnSolve.innerText = "🏳️ 放棄"; btnSolve.className = "action-btn give-up";
             btnReset.style.display = 'block'; btnReset.disabled = false;
+            btnHint.style.display = 'block'; btnHint.disabled = false;
             
             $('grid-container').classList.remove('win-glow');
             $('timer-disp').classList.remove('urgent');
@@ -400,7 +405,7 @@
             calculateTimeSpent(); forceSolve(false);
             let btnSolve = $('btn-solve'), levelInfo = $('level-info');
             btnSolve.innerText = "⌛ 挑戰失敗"; btnSolve.className = "action-btn failed";
-            $('btn-reset').style.display = 'none'; 
+            $('btn-reset').style.display = 'none'; $('btn-hint').style.display = 'none';
             levelInfo.innerText = "時間耗盡，本關不計分"; levelInfo.style.color = "#e74c3c";
         }
 
@@ -508,6 +513,12 @@
                     div.className = 'block';
                     if (block) {
                         div.classList.add(block.isFixed ? 'fixed' : 'user-placed');
+                        
+                        // 載入提示的外觀特效
+                        if (block.isHint) {
+                            div.classList.add('hint-glow');
+                        }
+
                         div.innerHTML = `<img src="images/block_${block.id}_${block.face}.png" class="block-image" style="transform: rotate(${block.rot * 90}deg);" draggable="false">`;
                         const edgeZone = document.createElement('div');
                         edgeZone.className = 'zone-edge'; edgeZone.onclick = (e) => { e.stopPropagation(); rotateBlock(i); };
@@ -523,7 +534,6 @@
                         }
                     } else {
                         div.innerHTML = '+'; div.className = 'empty-slot'; 
-                        // 加入第一階段的藍色光圈
                         if (introTutPhase === 1 && config.type === 'SOLVE') div.classList.add('tut-highlight-blue');
                         div.onclick = () => openPicker(i);
                     }
@@ -536,6 +546,8 @@
         function rotateBlock(index) { 
             if (userBoard[index] && !isRoundWon) { 
                 userBoard[index].rot = (userBoard[index].rot + 1) % 4; 
+                // 若玩家進行旋轉，則移除提示發光狀態
+                if (userBoard[index].isHint) delete userBoard[index].isHint;
                 playSound('action'); 
                 renderGameGrid(); 
             } 
@@ -544,6 +556,8 @@
         function flipBlock(index) { 
             if (userBoard[index] && !userBoard[index].isFixed && !isRoundWon) { 
                 userBoard[index].face = userBoard[index].face === 'B' ? 'W' : 'B'; 
+                // 若玩家進行翻面，則移除提示發光狀態
+                if (userBoard[index].isHint) delete userBoard[index].isHint;
                 playSound('action'); 
                 renderGameGrid(); 
             } 
@@ -553,11 +567,7 @@
             if (isRoundWon) return; 
             userBoard[index] = null; 
             playSound('action'); 
-            
-            // 【新增邏輯】如果玩家在階段三把剛放進去的魔石收回了，提示文字要退回階段一
-            if (introTutPhase === 3) {
-                setIntroPhase(1);
-            }            
+            if (introTutPhase === 3) setIntroPhase(1);            
             renderGameGrid(); 
         }
         
@@ -566,9 +576,9 @@
         function openPicker(index) { 
             if (isRoundWon) return; 
             if (introTutPhase === 1) {
-                if (currentLayoutConfig[index].type !== 'SOLVE') return; // 教學鎖定
+                if (currentLayoutConfig[index].type !== 'SOLVE') return; 
                 setIntroPhase(2);
-            } else if (introTutPhase > 0) return; // 鎖定其他階段
+            } else if (introTutPhase > 0) return; 
             
             pickingSlot = index; pickerFace = 'B'; renderPickerGrid(); $('picker-modal').style.display = 'flex'; 
         }
@@ -580,13 +590,12 @@
             $('picker-title').innerText = `選擇魔石 (${pickerFace}面)`; grid.innerHTML = '';
             getAvailableBlocks().forEach(id => {
                 const div = document.createElement('div'); div.className = 'picker-item';
-                // 加入第二階段的黃色光圈
                 if (introTutPhase === 2 && id === 2) div.classList.add('tut-highlight-yellow');
                 
                 div.innerHTML = `<img src="images/block_${id}_${pickerFace}.png">`;
                 div.onclick = () => { 
                     if (introTutPhase === 2) {
-                        if (id !== 2) return; // 教學鎖定只能選 2 號
+                        if (id !== 2) return; 
                         setIntroPhase(3);
                     }
                     userBoard[pickingSlot] = { id: id, face: pickerFace, rot: 0, isFixed: false }; playSound('action'); closePicker(); renderGameGrid(); 
@@ -596,7 +605,6 @@
         }
         function closePicker() { 
             $('picker-modal').style.display = 'none'; 
-            // 如果玩家在階段 2 按了取消，自動退回階段 1 的文字
             if (introTutPhase === 2 && !userBoard[pickingSlot]) setIntroPhase(1); 
         }
 
@@ -656,18 +664,16 @@
             if (currentValidLineCount > lastValidLineCount) playSound('line');
             lastValidLineCount = currentValidLineCount;
 
-                        const isFull = userBoard.every((b, i) => currentLayoutConfig[i].type === 'EMPTY' || b !== null);
+            const isFull = userBoard.every((b, i) => currentLayoutConfig[i].type === 'EMPTY' || b !== null);
             if (isFull && isValid(userBoard) && !isRoundWon) {
                 isRoundWon = true; 
                 clearInterval(timerInterval); 
                 
-                // 【新增邏輯】攔截教學模式的勝利，交給劇本處理
                 if (introTutPhase > 0) {
                     setIntroPhase(4);
-                    return; // 中斷後續的一般計分與按鈕顯示
+                    return; 
                 }
 
-                // 一般遊戲勝利的邏輯
                 playSound('win');
                 const spent = Math.floor((Date.now() - roundStartTime) / 1000);
                 if (spent <= 60) {
@@ -679,6 +685,7 @@
                 $('btn-next').style.display = 'inline-block'; $('action-controls').style.display = 'none'; 
             }
         }
+        
         // --- 求解與輔助 ---
         function forceSolve(manual = true) {
             clearInterval(timerInterval);
@@ -689,7 +696,7 @@
                 if (solveStep(0, solverBoard, usedIDs)) {
                     userBoard = solverBoard; renderGameGrid();
                     $('grid-container').classList.add('win-glow');
-                    $('btn-solve').disabled = true; $('btn-reset').disabled = true; 
+                    $('btn-solve').disabled = true; $('btn-reset').disabled = true; $('btn-hint').disabled = true;
                     $('btn-next').style.display = 'inline-block'; $('action-controls').style.display = 'none';
                     isRoundWon = true; isSolverUsed = true;
                     if (manual) { let lvl = $('level-info'); lvl.innerText = "使用禁忌魔法，本關不計分"; lvl.style.color = "#e74c3c"; }
@@ -726,8 +733,87 @@
             }
             return false;
         }
+
+        // --- 新增提示系統 (Hint System) ---
+        function provideHint() {
+            if (isRoundWon) return;
+
+            // 複製目前的盤面與已使用的魔石 ID
+            let tempBoard = Array(9).fill(null);
+            let usedIDs = new Set();
+            
+            for (let i = 0; i < 9; i++) {
+                if (userBoard[i]) {
+                    tempBoard[i] = { ...userBoard[i] }; 
+                    usedIDs.add(userBoard[i].id);
+                }
+            }
+
+            // 利用新的提示求解器推算是否還有解
+            if (!solveHintStep(0, tempBoard, usedIDs)) {
+                alert("⚠️ 目前的排法已經產生矛盾，無法完成封印！\n請先移除部分錯誤的魔石再試試。");
+                return;
+            }
+
+            // 尋找第一個還沒填入的解答空格
+            let hintGiven = false;
+            for (let i = 0; i < 9; i++) {
+                if (currentLayoutConfig[i].type === 'SOLVE' && !userBoard[i]) {
+                    userBoard[i] = { ...tempBoard[i], isHint: true, isFixed: false };
+                    hintGiven = true;
+                    playSound('action');
+                    
+                    // 可選的懲罰機制（目前註解掉，您可以自行打開）
+                    // timeLeft = Math.max(0, timeLeft - 15); 
+                    // updateTimerDisplay(); updateTimeBar();
+                    
+                    break;
+                }
+            }
+
+            if (hintGiven) {
+                renderGameGrid();
+            } else {
+                alert("盤面已經填滿囉！");
+            }
+        }
+
+        // 專為提示系統設計的回溯求解器，它會保留玩家原本已經填入的格子往下演算
+        function solveHintStep(idx, board, usedIDs) {
+            if (idx >= 9) return true;
+
+            // 如果這格玩家已經填寫了，驗證目前的盤面並跳往下一格
+            if (board[idx] !== null) {
+                if (!isValid(board)) return false; 
+                return solveHintStep(idx + 1, board, usedIDs);
+            }
+
+            const config = currentLayoutConfig[idx];
+            if (config.type === 'EMPTY') {
+                return solveHintStep(idx + 1, board, usedIDs);
+            }
+            
+            if (config.type === 'SOLVE') {
+                for (let id = 1; id <= 9; id++) {
+                    if (!usedIDs.has(id)) {
+                        usedIDs.add(id);
+                        for (let face of ['B', 'W']) {
+                            for (let rot = 0; rot < 4; rot++) {
+                                board[idx] = { id, face, rot, isFixed: false };
+                                // 剪枝判斷：先確定放下去是合法的才繼續深掘
+                                if (isValid(board)) {
+                                    if (solveHintStep(idx + 1, board, usedIDs)) return true;
+                                }
+                            }
+                        }
+                        board[idx] = null; 
+                        usedIDs.delete(id);
+                    }
+                }
+                return false; 
+            }
+            return false;
+        }
     </script>
 </body>
-
 </html>
-
