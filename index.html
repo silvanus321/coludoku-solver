@@ -149,6 +149,7 @@
             background: rgba(0,0,0,0.6); color: white;
             padding: 1px 4px; border-radius: 3px;
             font-size: 0.7rem; pointer-events: none;
+            white-space: nowrap;
         }
         .empty-slot { background-color: #e0e0e0; color: #bbb; font-size: 1.5rem; }
 
@@ -187,6 +188,12 @@
         <div class="grid-selector" id="shape-buttons"></div>
 
         <div class="step-title">步驟 3：詠唱咒語 🪄</div>
+        
+        <div style="margin-bottom: 15px; font-size: 0.95rem; color: #444; text-align: left; padding-left: 10px;">
+            <input type="checkbox" id="lock-rotation" checked onchange="resetSolverState()">
+            <label for="lock-rotation" style="cursor: pointer; font-weight: bold;">🔒 鎖定初始魔石方向</label>
+        </div>
+
         <div id="status-text" class="status-msg">請完成設定...</div>
         <button id="btn-solve" class="solve-btn" onclick="startSolving()">✨ 開始封印 ✨</button>
     </div>
@@ -283,7 +290,7 @@
             { id: 18, name: "No.18", level: 9, active: [1,5,7,8,9], targets: [1,9] },
             // Level 10
             { id: 19, name: "No.19", level: 10, active: [2,4,5,6,8], targets: [2,4] },
-            { id: 20, name: "No.20", level: 10, active: [1,4,7,8,9], targets: [4,7] },
+            { id: 20, name: "No.20", level: 10, active: [1,4,7,8,9], targets: [4,8] },
             { id: 21, name: "No.21", level: 10, active: [3,4,5,6,9], targets: [3,5] },
             { id: 22, name: "No.22", level: 10, active: [2,4,5,6,8], targets: [2,4] },
             { id: 23, name: "No.23", level: 10, active: [1,4,7,8,9], targets: [4,9] },
@@ -496,7 +503,8 @@
         }
 
         function solveAll(board, usedIDs) {
-            if (allSolutions.length >= 72) return true;
+            // 這裡改成 288！
+            if (allSolutions.length >= 288) return true;
 
             let slot = -1;
             for(let i=0; i<9; i++) {
@@ -526,8 +534,14 @@
                 }
             }
 
+            // 取得目前的鎖定狀態
+            const lockRotation = document.getElementById('lock-rotation').checked;
+
             for (let cand of candidates) {
-                for (let rot = 0; rot < 4; rot++) {
+                // 如果勾選鎖定，且這是被固定的初始魔石，就只測試 0 度；否則測試 4 個方向
+                let rotationsToTest = (cand.isFixed && lockRotation) ? [0] : [0, 1, 2, 3];
+                
+                for (let rot of rotationsToTest) {
                     board[slot] = { id: cand.id, face: cand.face, rot: rot, isFixed: cand.isFixed };
                     
                     if (isValid(board)) {
@@ -543,7 +557,9 @@
 
         // --- 執行與渲染 ---
         function startSolving() {
-            const currentParamsHash = `${currentTileID}-${currentShapeID}`;
+            // 把鎖定狀態加入快取判定中，這樣改變打勾狀態時才會重新計算
+            const isLocked = document.getElementById('lock-rotation').checked;
+            const currentParamsHash = `${currentTileID}-${currentShapeID}-${isLocked}`;
 
             if (currentParamsHash !== lastParamsHash || allSolutions.length === 0) {
                 document.getElementById('status-text').innerHTML = "🔮 正在詠唱咒語...";
@@ -599,7 +615,8 @@
                 status.innerHTML = "<span class='success-msg'>✅ 封印成功 (唯一解)</span>";
                 btn.innerText = "✨ 唯一解 ✨";
             } else {
-                let countText = total >= 72 ? "72+" : total;
+                // 這裡也改成 288！
+                let countText = total >= 288 ? "288+" : total;
                 status.innerHTML = `<span class='multi-msg'>✅ 封印成功 (第 ${current} / ${countText} 種解法)</span>`;
                 btn.innerText = "➡️ 換一種解法";
             }
@@ -612,6 +629,8 @@
         function renderGrid(boardData, isPreview) {
             const container = document.getElementById('grid-container');
             container.innerHTML = '';
+            
+            const isLocked = document.getElementById('lock-rotation').checked;
 
             for(let i=0; i<9; i++) {
                 const config = currentLayoutConfig[i];
@@ -628,14 +647,19 @@
                 } 
                 else if (block) {
                     div.style.borderColor = block.isFixed ? '#e74c3c' : '#555';
-                    // 在這裡套用新的區塊圖片檔名規則
+                    
+                    // 根據新的檔名規則載入圖片
                     const paddedBlockId = String(block.id).padStart(2, '0');
                     const imagePath = `images/block_${block.face}-${paddedBlockId}.png`;
                     const rot = block.rot * 90;
+                    
+                    // 鎖定狀態的視覺小圖示
+                    const lockIcon = (block.isFixed && isLocked) ? '🔒' : '';
+                    
                     div.innerHTML = `
                         <img src="${imagePath}" class="block-image" style="transform: rotate(${rot}deg);"
                              onerror="this.style.display='none'; this.parentNode.innerText='${block.face}${block.id}';">
-                        <div class="block-info">${block.face}${block.id}</div>
+                        <div class="block-info">${block.face}${block.id} ${lockIcon}</div>
                     `;
                 }
                 else if (config && config.type === 'SOLVE') {
