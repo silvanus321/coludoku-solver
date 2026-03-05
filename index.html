@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>色獨封印解題器 Coludoku Sealer Solver</title>
+    <title>Coludoku Sealer Solver</title>
     <style>
         /* --- 基礎設定 --- */
         body {
@@ -193,17 +193,17 @@
     <div class="controls">
         <div class="selection-area">
             <div class="list-container">
-                <div class="list-title">💎 魔石 Tile</div>
+                <div class="list-title">💎Tile</div>
                 <div class="scroll-list" id="list-tiles"></div>
             </div>
             
             <div class="list-container">
-                <div class="list-title">🔯 法陣 Matrix</div>
+                <div class="list-title">🔯Matrix</div>
                 <div class="scroll-list" id="list-shapes"></div>
             </div>
         </div>
 
-        <button id="btn-solve" class="solve-btn" onclick="startSolving()">✨ 色獨封印 Coludoku ✨</button>
+        <button id="btn-solve" class="solve-btn" onclick="startSolving()">✨Coludoku ✨</button>
         <div id="status-text" class="status-msg"></div>
     </div>
 
@@ -503,7 +503,7 @@
             const currentParamsHash = `${currentTileID}-${currentShapeID}-${isLocked}`;
 
             if (currentParamsHash !== lastParamsHash || allSolutions.length === 0) {
-                document.getElementById('status-text').innerHTML = "🔮 正在詠唱 Chanting...";
+                document.getElementById('status-text').innerHTML = "🔮Chanting...";
                 
                 let board = Array(9).fill(null);
                 let used = new Set();
@@ -531,7 +531,7 @@
                         updateStatusAndRender();
                     } else {
                         document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 失敗 Fail </span>";
-                        document.getElementById('btn-solve').innerText = "✨ 開始詠唱 Chanting ✨";
+                        document.getElementById('btn-solve').innerText = "✨Chanting✨";
                     }
                 }, 50);
 
@@ -553,12 +553,12 @@
             renderGrid(allSolutions[currentSolIndex], false);
 
             if (total === 1) {
-                status.innerHTML = "<span class='success-msg'>✅ 1 封印法 Seals</span>";
-                btn.innerText = "✨ 唯一解 Only Seal ✨";
+                status.innerHTML = "<span class='success-msg'>✅ 1 Seal</span>";
+                btn.innerText = "✨ Only Seal ✨";
             } else {
                 let countText = total >= 288 ? "288+" : total;
-                status.innerHTML = `<span class='multi-msg'>✅  ${current} / ${countText} 封印法 Seals</span>`;
-                btn.innerText = "➡️ 換封印法 Switch the Seal";
+                status.innerHTML = `<span class='multi-msg'>✅  ${current} / ${countText} Seals</span>`;
+                btn.innerText = "➡️Next";
             }
         }
 
@@ -612,6 +612,7 @@
     </script>
 </body>
 </html>
+
 
 
 
