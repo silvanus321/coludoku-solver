@@ -124,29 +124,6 @@
             opacity: 0.8;
         }
 
-        /* --- 執行按鈕與訊息 --- */
-        .solve-btn {
-            background-color: #2ecc71;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            font-size: 1.2rem;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            margin-top: 5px;
-            box-shadow: 0 4px 6px rgba(46, 204, 113, 0.3);
-            width: 100%;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-        .solve-btn:active { transform: scale(0.98); }
-        
-        .status-msg { margin-top: 10px; font-weight: bold; min-height: 22px; font-size: 1rem; }
-        .error-msg { color: #e74c3c; }
-        .success-msg { color: #27ae60; }
-        .multi-msg { color: #2980b9; }
-
         /* --- 九宮格 --- */
         .main-grid {
             display: grid;
@@ -184,6 +161,39 @@
         }
         .empty-slot { background-color: #e0e0e0; color: #bbb; font-size: 1.5rem; }
 
+        /* --- 底部執行區塊與訊息 --- */
+        .action-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 20px;
+        }
+
+        .solve-btn {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 5px;
+            box-shadow: 0 4px 6px rgba(46, 204, 113, 0.3);
+            width: auto;
+            min-width: 180px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .solve-btn:active { transform: scale(0.98); }
+        
+        .status-msg { margin-top: 10px; font-weight: bold; min-height: 22px; font-size: 1rem; text-align: center; }
+        .error-msg { color: #e74c3c; }
+        .success-msg { color: #27ae60; }
+        .multi-msg { color: #2980b9; }
+
     </style>
 </head>
 <body>
@@ -202,12 +212,14 @@
                 <div class="scroll-list" id="list-shapes"></div>
             </div>
         </div>
-
-        <button id="btn-solve" class="solve-btn" onclick="startSolving()">✨Coludoku ✨</button>
-        <div id="status-text" class="status-msg"></div>
     </div>
 
     <div id="grid-container" class="main-grid"></div>
+
+    <div class="action-area">
+        <button id="btn-solve" class="solve-btn" onclick="startSolving()">✨Coludoku ✨</button>
+        <div id="status-text" class="status-msg"></div>
+    </div>
 
     <script>
         // --- 1. 資料庫：基本方塊定義 ---
@@ -381,7 +393,7 @@
             allSolutions = [];
             currentSolIndex = 0;
             renderEmptyGrid();
-            document.getElementById('btn-solve').innerText = "✨ 開始封印 Start Seal ✨";
+            document.getElementById('btn-solve').innerText = "✨Chanting the Seal✨";
             // 移除準備就緒字樣
             document.getElementById('status-text').innerHTML = ""; 
         }
@@ -612,8 +624,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
