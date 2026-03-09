@@ -188,6 +188,7 @@
             letter-spacing: 1px;
         }
         .solve-btn:active { transform: scale(0.98); }
+        .solve-btn:disabled { background-color: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; }
         
         .status-msg { margin-top: 10px; font-weight: bold; min-height: 22px; font-size: 1rem; text-align: center; }
         .error-msg { color: #e74c3c; }
@@ -275,17 +276,19 @@
             { id: 36, level: 6, blocks: [{id:6, f:'W'}, {id:9, f:'B'}] } 
         ];
 
-        // --- 資料庫：封印法陣 (Shapes) ---
+        // --- 資料庫：封印法陣 (Shapes) - 升級支援 M/W/B ---
         const SHAPES = [
             { id: 1, name: "No.01", level: 1, active: [1,7,9], targets: [1,9] },
             { id: 2, name: "No.02", level: 1, active: [4,5,6], targets: [4] },
             { id: 3, name: "No.03", level: 1, active: [5,6,8], targets: [5,8] },
-            { id: 4, name: "No.04", level: 1, active: [1,7,9], targets: [9,1 },
+            { id: 4, name: "No.04", level: 1, active: [1,7,9], targets: [9,1] },
             { id: 5, name: "No.05", level: 1, active: [4,5,6], targets: [5] },
             { id: 6, name: "No.06", level: 1, active: [5,6,8], targets: [8,5] },
-            { id: 7, name: "No.07", level: 2, active: [1,2,5,6], targets: [1,5] },
-            { id: 8, name: "No.08", level: 2, active: [3,4,6,7], targets: [3,7] },
-            { id: 9, name: "No.09", level: 2, active: [1,2,5,7], targets: [5,7] },
+            // 將 7、8、9 升級為展示新語法：
+            { id: 7, name: "No.07", level: 2, active: [1,2,5,6], targets: [{pos: 1, req: 'M'}, {pos: 5, req: 'M'}] },
+            { id: 8, name: "No.08", level: 2, active: [3,4,6,7], targets: [{pos: 3, req: 'M'}, {pos: 7, req: 'M'}] },
+            { id: 9, name: "No.09", level: 2, active: [1,2,5,7], targets: [{pos: 5, req: 'M'}, {pos: 7, req: 'M'}] },
+            // 其他保持原樣 (系統會自動處理相容)
             { id: 10, name: "No.10", level: 2, active: [1,2,5,6], targets: [2,6] },
             { id: 11, name: "No.11", level: 2, active: [3,4,6,7], targets: [3,4] },
             { id: 12, name: "No.12", level: 2, active: [1,2,5,7], targets: [5,7] },
@@ -398,6 +401,37 @@
             document.getElementById('status-text').innerHTML = ""; 
         }
 
+        // ==========================================
+        // 🚀 新增：屬性配對引擎 (支援 B / W / M)
+        // ==========================================
+        function getValidTargetAssignments(shapeTargets, tileBlocks) {
+            // 向下相容：將舊版 [1, 5] 自動轉換為 [{pos: 1, req: 'M'}, {pos: 5, req: 'M'}]
+            const targets = shapeTargets.map(t => typeof t === 'number' ? { pos: t, req: 'M' } : t);
+            let validAssignments = [];
+
+            if (targets.length === 1 && tileBlocks.length >= 1) {
+                for (let i = 0; i < tileBlocks.length; i++) {
+                    if (targets[0].req === 'M' || targets[0].req === tileBlocks[i].f) {
+                        validAssignments.push([tileBlocks[i]]);
+                    }
+                }
+            } 
+            else if (targets.length === 2 && tileBlocks.length === 2) {
+                // 排列 1：目標0 配 方塊0，目標1 配 方塊1
+                if ((targets[0].req === 'M' || targets[0].req === tileBlocks[0].f) &&
+                    (targets[1].req === 'M' || targets[1].req === tileBlocks[1].f)) {
+                    validAssignments.push([tileBlocks[0], tileBlocks[1]]);
+                }
+                // 排列 2：目標0 配 方塊1，目標1 配 方塊0
+                if ((targets[0].req === 'M' || targets[0].req === tileBlocks[1].f) &&
+                    (targets[1].req === 'M' || targets[1].req === tileBlocks[0].f)) {
+                    validAssignments.push([tileBlocks[1], tileBlocks[0]]);
+                }
+            }
+            return validAssignments;
+        }
+
+        // --- 更新預覽邏輯以支援新屬性配對 ---
         function updatePreview() {
             const shape = SHAPES.find(s => s.id === currentShapeID);
             const tile = TARGET_TILES.find(t => t.id === currentTileID);
@@ -408,56 +442,96 @@
             for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
             shape.active.forEach(pos => { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; });
             
-            shape.targets.forEach((pos, idx) => {
-                if (idx < tile.blocks.length) {
-                    const blockDef = tile.blocks[idx];
-                    currentLayoutConfig[pos-1] = { 
+            const validAssignments = getValidTargetAssignments(shape.targets, tile.blocks);
+            
+            if (validAssignments.length > 0) {
+                // 預覽畫面顯示第一組合法的屬性排列
+                const assignment = validAssignments[0];
+                const targets = shape.targets.map(t => typeof t === 'number' ? { pos: t, req: 'M' } : t);
+                
+                targets.forEach((targetObj, idx) => {
+                    const blockDef = assignment[idx];
+                    currentLayoutConfig[targetObj.pos - 1] = { 
                         type: 'FIXED', 
                         id: blockDef.id, 
                         face: blockDef.f 
                     };
-                } else {
-                    currentLayoutConfig[pos-1] = { type: 'SOLVE' };
-                }
-            });
+                });
+            }
+            // 如果 validAssignments 為 0，代表魔石屬性跟法陣衝突出錯，畫面上會顯示錯誤的 SOLVE 問號
             
             renderGrid(null, true);
         }
 
-        function getRotatedMatrix(matrix, times) {
-            let m = JSON.parse(JSON.stringify(matrix));
-            for (let t = 0; t < times; t++) {
-                const newM = [[0,0],[0,0]];
-                newM[0][1] = m[0][0]; newM[1][1] = m[0][1];
-                newM[1][0] = m[1][1]; newM[0][0] = m[1][0];
-                m = newM;
-            }
-            return m;
+        // ==========================================
+        // 🚀 效能優化區 1：O(1) 陣列解構取代深拷貝
+        // ==========================================
+        function getRotatedMatrix(matrix, rot) {
+            if (rot === 0) return matrix;
+            const [[a, b], [c, d]] = matrix;
+            if (rot === 1) return [[c, a], [d, b]]; 
+            if (rot === 2) return [[d, c], [b, a]]; 
+            if (rot === 3) return [[b, d], [a, c]]; 
+            return matrix;
         }
 
-        function isValid(boardState) {
+        // ==========================================
+        // 🚀 效能優化區 2：局部驗證與 Bitmask 位元運算
+        // ==========================================
+        function isValid(boardState, currentSlot) {
             let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
+            
             for(let i=0; i<9; i++) {
                 if(!boardState[i]) continue;
                 let b = boardState[i];
                 let baseRow = Math.floor(i / 3) * 2;
                 let baseCol = (i % 3) * 2;
                 let matrix = getRotatedMatrix(BLOCKS[b.id][b.face], b.rot);
-                fullGrid[baseRow][baseCol] = matrix[0][0]; fullGrid[baseRow][baseCol+1] = matrix[0][1];
-                fullGrid[baseRow+1][baseCol] = matrix[1][0]; fullGrid[baseRow+1][baseCol+1] = matrix[1][1];
+                fullGrid[baseRow][baseCol] = matrix[0][0]; 
+                fullGrid[baseRow][baseCol+1] = matrix[0][1];
+                fullGrid[baseRow+1][baseCol] = matrix[1][0]; 
+                fullGrid[baseRow+1][baseCol+1] = matrix[1][1];
             }
-            for (let i = 0; i < 6; i++) {
-                let rowSeen = new Set(), colSeen = new Set();
-                for (let j = 0; j < 6; j++) {
-                    let rVal = fullGrid[i][j];
-                    if (rVal !== 0) { if (rowSeen.has(rVal)) return false; rowSeen.add(rVal); }
-                    let cVal = fullGrid[j][i];
-                    if (cVal !== 0) { if (colSeen.has(cVal)) return false; colSeen.add(cVal); }
+            
+            let rowsToCheck = [0, 1, 2, 3, 4, 5];
+            let colsToCheck = [0, 1, 2, 3, 4, 5];
+            
+            if (currentSlot !== undefined && currentSlot >= 0) {
+                let baseRow = Math.floor(currentSlot / 3) * 2;
+                let baseCol = (currentSlot % 3) * 2;
+                rowsToCheck = [baseRow, baseRow + 1];
+                colsToCheck = [baseCol, baseCol + 1];
+            }
+
+            for (let r of rowsToCheck) {
+                let rowSeen = 0; 
+                for (let c = 0; c < 6; c++) {
+                    let val = fullGrid[r][c];
+                    if (val !== 0) {
+                        let bit = 1 << val;
+                        if ((rowSeen & bit) !== 0) return false; 
+                        rowSeen |= bit;
+                    }
+                }
+            }
+            
+            for (let c of colsToCheck) {
+                let colSeen = 0;
+                for (let r = 0; r < 6; r++) {
+                    let val = fullGrid[r][c];
+                    if (val !== 0) {
+                        let bit = 1 << val;
+                        if ((colSeen & bit) !== 0) return false; 
+                        colSeen |= bit;
+                    }
                 }
             }
             return true;
         }
 
+        // ==========================================
+        // 🚀 效能優化區 3：遞迴傳遞 Slot
+        // ==========================================
         function solveAll(board, usedIDs) {
             if (allSolutions.length >= 288) return true;
 
@@ -498,7 +572,7 @@
                 for (let rot of rotationsToTest) {
                     board[slot] = { id: cand.id, face: cand.face, rot: rot, isFixed: cand.isFixed };
                     
-                    if (isValid(board)) {
+                    if (isValid(board, slot)) {
                         usedIDs.add(cand.id);
                         if (solveAll(board, usedIDs)) return true; 
                         usedIDs.delete(cand.id);
@@ -509,43 +583,78 @@
             return false;
         }
 
+        // --- 支援屬性判定的新版 startSolving ---
         function startSolving() {
             const currentLevel = getShapeLevel();
             const isLocked = currentLevel <= 3;
             const currentParamsHash = `${currentTileID}-${currentShapeID}-${isLocked}`;
+            const solveBtn = document.getElementById('btn-solve');
 
             if (currentParamsHash !== lastParamsHash || allSolutions.length === 0) {
                 document.getElementById('status-text').innerHTML = "🔮Chanting...";
+                solveBtn.disabled = true;
                 
-                let board = Array(9).fill(null);
-                let used = new Set();
-                reservedIDs.clear();
-                allSolutions = []; 
+                const shape = SHAPES.find(s => s.id === currentShapeID);
+                const tile = TARGET_TILES.find(t => t.id === currentTileID);
 
                 if (Object.keys(currentLayoutConfig).length === 0) {
                      alert("請先選擇圖形與魔石！");
+                     solveBtn.disabled = false;
                      return;
                 }
 
-                for(let i=0; i<9; i++) {
-                    const config = currentLayoutConfig[i];
-                    if(config && config.type === 'FIXED') {
-                        reservedIDs.add(config.id);
-                    }
+                // 檢查屬性配對 (防呆機制)
+                const validAssignments = getValidTargetAssignments(shape.targets, tile.blocks);
+                if (validAssignments.length === 0) {
+                     alert("⚠️ 屬性不合：這顆魔石的黑白面無法滿足法陣的限制條件！");
+                     solveBtn.disabled = false;
+                     document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 屬性衝突</span>";
+                     return;
                 }
 
-                setTimeout(() => {
-                    solveAll(board, used); 
+                allSolutions = []; 
+                reservedIDs.clear();
 
-                    if (allSolutions.length > 0) {
-                        currentSolIndex = 0;
-                        lastParamsHash = currentParamsHash; 
-                        updateStatusAndRender();
-                    } else {
-                        document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 失敗 Fail </span>";
-                        document.getElementById('btn-solve').innerText = "✨Chanting✨";
-                    }
-                }, 50);
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        // 針對每一種合法的目標屬性排列進行解題
+                        validAssignments.forEach(assignment => {
+                            let board = Array(9).fill(null);
+                            let used = new Set();
+                            reservedIDs.clear();
+                            
+                            // 重建當前排列的 Layout Config
+                            currentLayoutConfig = {};
+                            for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
+                            shape.active.forEach(pos => { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; });
+                            
+                            const targets = shape.targets.map(t => typeof t === 'number' ? { pos: t, req: 'M' } : t);
+                            
+                            targets.forEach((targetObj, idx) => {
+                                const blockDef = assignment[idx];
+                                currentLayoutConfig[targetObj.pos - 1] = { 
+                                    type: 'FIXED', 
+                                    id: blockDef.id, 
+                                    face: blockDef.f 
+                                };
+                                reservedIDs.add(blockDef.id);
+                            });
+
+                            solveAll(board, used); 
+                        });
+
+                        solveBtn.disabled = false;
+
+                        if (allSolutions.length > 0) {
+                            currentSolIndex = 0;
+                            lastParamsHash = currentParamsHash; 
+                            updateStatusAndRender();
+                        } else {
+                            document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 失敗 Fail </span>";
+                            solveBtn.innerText = "✨Chanting✨";
+                        }
+                    });
+                });
 
             } else {
                 currentSolIndex++;
@@ -624,5 +733,3 @@
     </script>
 </body>
 </html>
-
-
