@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coludoku Sealer Solver</title>
+    <style>
+        /* --- 基礎設定 --- */
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            margin: 0;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        h1 { margin-bottom: 5px; color: #333; letter-spacing: 2px; font-size: 1.5rem; }
+
+        /* --- 控制面板 --- */
+        .controls {
+            margin-bottom: 10px;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 95%;
+            box-sizing: border-box;
+        }
+
+        /* --- 左右雙軌滑動選擇區 --- */
+        .selection-area {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .list-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .list-title {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .scroll-list {
+            background: #fdfdfd;
+            border: 2px solid #eaeaea;
+            border-radius: 12px;
+            overflow-y: auto;
+            padding: 40px 10px; 
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            aspect-ratio: 1 / 0.8;
+            max-height: 220px;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+
+        .scroll-list::-webkit-scrollbar { width: 4px; }
+        .scroll-list::-webkit-scrollbar-track { background: transparent; }
+        .scroll-list::-webkit-scrollbar-thumb { background: #dcdcdc; border-radius: 4px; }
+        .scroll-list::-webkit-scrollbar-thumb:hover { background: #bbb; }
+
+        .img-btn {
+            background-color: white;
+            border: 3px solid #eee;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            position: relative;
+            scroll-snap-align: center; 
+        }
+
+        .img-btn:hover { border-color: #3498db; transform: translateY(-2px); }
+        .img-btn.active { border-color: #f1c40f; background-color: #fffcf0; box-shadow: 0 4px 12px rgba(241, 196, 15, 0.4); transform: scale(1.05); }
+        #list-tiles .img-btn.active { border-color: #e67e22; background-color: #fdf2e9; } 
+        
+        .img-btn img { width: 90%; height: 80%; object-fit: contain; }
+        .btn-label { margin-top: 5px; font-size: 0.85rem; color: #555; font-weight: bold; }
+        
+        .level-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: #34495e;
+            color: white;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: bold;
+            opacity: 0.8;
+        }
+
+        /* --- 測試控制面板 (Test Controls) --- */
+        .test-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #eef2f5;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #e74c3c; /* 換個顏色提醒這是測試模式 */
+            border: 2px dashed #e74c3c;
+            flex-wrap: wrap;
+        }
+
+        .test-controls label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .test-controls input[type="checkbox"] {
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        /* --- 九宮格 --- */
+        .main-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1 / 1;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        .block {
+            background-color: #fff;
+            border: 3px solid transparent;
+            position: relative;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            aspect-ratio: 1 / 1; 
+        }
+
+        .block-image { width: 100%; height: 100%; object-fit: contain; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .block-info {
+            position: absolute; bottom: 2px; right: 2px;
+            background: rgba(0,0,0,0.6); color: white;
+            padding: 1px 4px; border-radius: 3px;
+            font-size: 0.65rem; pointer-events: none;
+            white-space: nowrap;
+        }
+        .empty-slot { background-color: #e0e0e0; color: #bbb; font-size: 1.5rem; }
+
+        /* --- 底部執行區塊與訊息 --- */
+        .action-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 20px;
+        }
+
+        .solve-btn {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 5px;
+            box-shadow: 0 4px 6px rgba(46, 204, 113, 0.3);
+            width: auto;
+            min-width: 180px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .solve-btn:active { transform: scale(0.98); }
+        .solve-btn:disabled { background-color: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        .status-msg { margin-top: 10px; font-weight: bold; min-height: 22px; font-size: 1rem; text-align: center; }
+        .error-msg { color: #e74c3c; }
+        .success-msg { color: #27ae60; }
+        .multi-msg { color: #2980b9; }
+
+    </style>
+</head>
+<body>
+
+    <h1>色獨封印師ColudokuSealer</h1>
+    
+    <div class="controls">
+        <div class="selection-area">
+            <div class="list-container">
+                <div class="list-title">💎Tile</div>
+                <div class="scroll-list" id="list-tiles"></div>
+            </div>
+            
+            <div class="list-container">
+                <div class="list-title">🔯Matrix</div>
+                <div class="scroll-list" id="list-shapes"></div>
+            </div>
+        </div>
+
+        <div class="test-controls" title="注意：此為開發者測試模式，勾選將無視原本關卡的預設規則">
+            <label><input type="checkbox" id="test-lock-rotation" onchange="forceReset()"> 🔒強制鎖定方向(0°)</label>
+            <label><input type="checkbox" id="test-force-b" onchange="handleFaceLock('B')"> ⬛強制只用B面</label>
+            <label><input type="checkbox" id="test-force-w" onchange="handleFaceLock('W')"> ⬜強制只用W面</label>
+        </div>
+    </div>
+
+    <div id="grid-container" class="main-grid"></div>
+
+    <div class="action-area">
+        <button id="btn-solve" class="solve-btn" onclick="startSolving()">✨Coludoku ✨</button>
+        <div id="status-text" class="status-msg"></div>
+    </div>
+
+    <script>
+        // --- 測試選項邏輯 ---
+        function handleFaceLock(selectedFace) {
+            if (selectedFace === 'B') {
+                document.getElementById('test-force-w').checked = false;
+            } else if (selectedFace === 'W') {
+                document.getElementById('test-force-b').checked = false;
+            }
+            forceReset();
+        }
+
+        // 強制重置狀態
+        function forceReset() {
+            lastParamsHash = "";
+            resetSolverState();
+        }
+
+        // --- 1. 資料庫：基本方塊定義 ---
+        const BLOCKS = {
+            1: { B: [[1,2],[3,4]], W: [[4,3],[6,5]] },
+            2: { B: [[3,4],[5,6]], W: [[6,5],[2,1]] },
+            3: { B: [[5,6],[1,2]], W: [[2,1],[4,3]] },
+            4: { B: [[2,3],[5,6]], W: [[5,4],[2,1]] },
+            5: { B: [[4,5],[1,2]], W: [[1,6],[4,3]] },
+            6: { B: [[6,1],[3,4]], W: [[3,2],[6,5]] },
+            7: { B: [[4,5],[6,1]], W: [[1,6],[3,2]] },
+            8: { B: [[6,1],[2,3]], W: [[3,2],[5,4]] },
+            9: { B: [[2,3],[4,5]], W: [[5,4],[1,6]] }
+        };
+
+        // --- 資料庫：魔石組合 (Target Tiles) ---
+        const TARGET_TILES = [
+            { id: 1,  level: 1, blocks: [{id:1, f:'B'}, {id:4, f:'W'}] },
+            { id: 2,  level: 1, blocks: [{id:2, f:'B'}, {id:5, f:'W'}] },
+            { id: 3,  level: 1, blocks: [{id:3, f:'B'}, {id:6, f:'W'}] },
+            { id: 4,  level: 1, blocks: [{id:1, f:'W'}, {id:6, f:'B'}] },
+            { id: 5,  level: 1, blocks: [{id:2, f:'W'}, {id:4, f:'B'}] },
+            { id: 6,  level: 1, blocks: [{id:3, f:'W'}, {id:5, f:'B'}] },
+            { id: 7,  level: 2, blocks: [{id:1, f:'B'}, {id:5, f:'W'}] },
+            { id: 8,  level: 2, blocks: [{id:2, f:'B'}, {id:6, f:'W'}] },
+            { id: 9,  level: 2, blocks: [{id:3, f:'B'}, {id:4, f:'W'}] },
+            { id: 10, level: 2, blocks: [{id:1, f:'W'}, {id:4, f:'B'}] },
+            { id: 11, level: 2, blocks: [{id:2, f:'W'}, {id:5, f:'B'}] },
+            { id: 12, level: 2, blocks: [{id:3, f:'W'}, {id:6, f:'B'}] },
+            { id: 13, level: 3, blocks: [{id:1, f:'B'}, {id:8, f:'W'}] },
+            { id: 14, level: 3, blocks: [{id:2, f:'B'}, {id:9, f:'W'}] },
+            { id: 15, level: 3, blocks: [{id:3, f:'B'}, {id:7, f:'W'}] },
+            { id: 16, level: 3, blocks: [{id:1, f:'W'}, {id:7, f:'B'}] },
+            { id: 17, level: 3, blocks: [{id:2, f:'W'}, {id:8, f:'B'}] },
+            { id: 18, level: 3, blocks: [{id:3, f:'W'}, {id:9, f:'B'}] },
+            { id: 19, level: 4, blocks: [{id:4, f:'B'}, {id:7, f:'W'}] },
+            { id: 20, level: 4, blocks: [{id:5, f:'B'}, {id:8, f:'W'}] },
+            { id: 21, level: 4, blocks: [{id:6, f:'B'}, {id:9, f:'W'}] },
+            { id: 22, level: 4, blocks: [{id:4, f:'W'}, {id:9, f:'B'}] },
+            { id: 23, level: 4, blocks: [{id:5, f:'W'}, {id:7, f:'B'}] },
+            { id: 24, level: 4, blocks: [{id:6, f:'W'}, {id:8, f:'B'}] },
+            { id: 25, level: 5, blocks: [{id:4, f:'B'}, {id:1, f:'W'}] },
+            { id: 26, level: 5, blocks: [{id:5, f:'B'}, {id:2, f:'W'}] },
+            { id: 27, level: 5, blocks: [{id:6, f:'B'}, {id:3, f:'W'}] },
+            { id: 28, level: 5, blocks: [{id:7, f:'W'}, {id:1, f:'B'}] },
+            { id: 29, level: 5, blocks: [{id:8, f:'W'}, {id:2, f:'B'}] },
+            { id: 30, level: 5, blocks: [{id:9, f:'W'}, {id:3, f:'B'}] },
+            { id: 31, level: 6, blocks: [{id:7, f:'B'}, {id:1, f:'W'}] },
+            { id: 32, level: 6, blocks: [{id:8, f:'B'}, {id:2, f:'W'}] },
+            { id: 33, level: 6, blocks: [{id:9, f:'B'}, {id:3, f:'W'}] },
+            { id: 34, level: 6, blocks: [{id:4, f:'W'}, {id:7, f:'B'}] },
+            { id: 35, level: 6, blocks: [{id:5, f:'W'}, {id:8, f:'B'}] },
+            { id: 36, level: 6, blocks: [{id:6, f:'W'}, {id:9, f:'B'}] } 
+        ];
+
+        // --- 資料庫：封印法陣 (Shapes) ---
+        const SHAPES = [
+            { id: 1, name: "No.01", level: 1, active: [1,2,5,8], targets: [{pos: 1, req: 'B'}, {pos: 5, req: 'W'}] },
+            { id: 2, name: "No.02", level: 1, active: [2,4,5,6], targets: [{pos: 2, req: 'B'}, {pos: 6, req: 'W'}] },
+            { id: 3, name: "No.03", level: 1, active: [3,7,8,9], targets: [{pos: 3, req: 'B'}, {pos: 7, req: 'W'}] },
+            { id: 4, name: "No.04", level: 1, active: [1,2,5,8], targets: [{pos: 1, req: 'B'}, {pos: 8, req: 'W'}] },
+            { id: 5, name: "No.05", level: 1, active: [2,4,5,6], targets: [{pos: 2, req: 'B'}, {pos: 4, req: 'W'}] },
+            { id: 6, name: "No.06", level: 1, active: [3,7,8,9], targets: [{pos: 3, req: 'B'}, {pos: 8, req: 'W'}] },
+            { id: 7, name: "No.07", level: 2, active: [1,2,5,8,9], targets: [{pos: 1, req: 'B'}, {pos: 5, req: 'W'}] },
+            { id: 8, name: "No.08", level: 2, active: [2,4,5,6,7], targets: [{pos: 2, req: 'B'}, {pos: 6, req: 'W'}] },
+            { id: 9, name: "No.09", level: 2, active: [3,5,7,8,9], targets: [{pos: 3, req: 'B'}, {pos: 7, req: 'W'}] },
+            { id: 10, name: "No.10", level: 2, active: [1,2,5,8,9], targets: [{pos: 1, req: 'B'}, {pos: 8, req: 'W'}] },
+            { id: 11, name: "No.11", level: 2, active: [2,4,5,6,7], targets: [{pos: 2, req: 'B'}, {pos: 4, req: 'W'}] },
+            { id: 12, name: "No.12", level: 2, active: [3,5,7,8,9], targets: [{pos: 3, req: 'B'}, {pos: 8, req: 'W'}] },
+            { id: 13, name: "No.13", level: 3, active: [1,2,5,7,8], targets: [{pos: 1, req: 'B'}, {pos: 5, req: 'W'}] },
+            { id: 14, name: "No.14", level: 3, active: [1,2,4,5,6], targets: [{pos: 2, req: 'B'}, {pos: 6, req: 'W'}] },
+            { id: 15, name: "No.15", level: 3, active: [1,3,7,8,9], targets: [{pos: 3, req: 'B'}, {pos: 7, req: 'W'}] },
+            { id: 16, name: "No.16", level: 3, active: [1,2,5,7,8], targets: [{pos: 1, req: 'B'}, {pos: 8, req: 'W'}] },
+            { id: 17, name: "No.17", level: 3, active: [1,2,4,5,6], targets: [{pos: 2, req: 'B'}, {pos: 4, req: 'W'}] },
+            { id: 18, name: "No.18", level: 3, active: [1,3,7,8,9], targets: [{pos: 3, req: 'B'}, {pos: 8, req: 'W'}] },
+            { id: 19, name: "No.19", level: 4, active: [1,2,3,4,6], targets: [{pos: 2, req: 'B'}, {pos: 6, req: 'W'}] },
+            { id: 20, name: "No.20", level: 4, active: [1,3,4,7,9], targets: [{pos: 3, req: 'B'}, {pos: 7, req: 'W'}] },
+            { id: 21, name: "No.21", level: 4, active: [1,2,4,5,6], targets: [{pos: 2, req: 'B'}, {pos: 6, req: 'W'}] },
+            { id: 22, name: "No.22", level: 4, active: [1,2,3,4,6], targets: [{pos: 3, req: 'B'}, {pos: 4, req: 'W'}] },
+            { id: 23, name: "No.23", level: 4, active: [1,3,4,7,9], targets: [{pos: 4, req: 'B'}, {pos: 9, req: 'W'}] },
+            { id: 24, name: "No.24", level: 4, active: [1,2,4,5,6], targets: [{pos: 1, req: 'B'}, {pos: 6, req: 'W'}] },
+            { id: 25, name: "No.25", level: 5, active: [2,4,5,6,8], targets: [{pos: 2, req: 'B'}, {pos: 4, req: 'W'}] },
+            { id: 26, name: "No.26", level: 5, active: [1,4,7,8,9], targets: [{pos: 4, req: 'B'}, {pos: 8, req: 'W'}] },
+            { id: 27, name: "No.27", level: 5, active: [3,4,5,6,9], targets: [{pos: 3, req: 'B'}, {pos: 5, req: 'W'}] },
+            { id: 28, name: "No.28", level: 5, active: [2,4,5,6,8], targets: [{pos: 6, req: 'B'}, {pos: 8, req: 'W'}] },
+            { id: 29, name: "No.29", level: 5, active: [1,4,7,8,9], targets: [{pos: 1, req: 'B'}, {pos: 8, req: 'W'}] },
+            { id: 30, name: "No.30", level: 5, active: [3,4,5,6,9], targets: [{pos: 3, req: 'B'}, {pos: 4, req: 'W'}] },
+            { id: 31, name: "No.31", level: 6, active: [1,2,4,5,7,8], targets: [{pos: 2, req: 'B'}, {pos: 4, req: 'W'}] },
+            { id: 32, name: "No.32", level: 6, active: [1,2,3,7,8,9], targets: [{pos: 1, req: 'B'}, {pos: 8, req: 'W'}] },
+            { id: 33, name: "No.33", level: 6, active: [4,5,6,7,8,9], targets: [{pos: 6, req: 'B'}, {pos: 8, req: 'W'}] },
+            { id: 34, name: "No.34", level: 6, active: [1,2,4,5,7,8], targets: [{pos: 1, req: 'B'}, {pos: 8, req: 'W'}] },
+            { id: 35, name: "No.35", level: 6, active: [1,2,3,7,8,9], targets: [{pos: 1, req: 'B'}, {pos: 9, req: 'W'}] },
+            { id: 36, name: "No.36", level: 6, active: [4,5,6,7,8,9], targets: [{pos: 6, req: 'B'}, {pos: 7, req: 'W'}] }
+        ];
+
+        // 全域變數
+        let currentTileID = 1;  
+        let currentShapeID = 1; 
+        
+        let currentLayoutConfig = {}; 
+        let reservedIDs = new Set();
+        let allSolutions = [];      
+        let currentSolIndex = 0;    
+        let lastParamsHash = "";    
+
+        function init() {
+            renderList('list-tiles', TARGET_TILES, 'tile', selectTile);
+            renderList('list-shapes', SHAPES, 'shape', selectShape);
+            
+            // 預設選中 1 號
+            selectTile(1);
+            selectShape(1);
+        }
+        
+        function renderList(containerId, dataArray, prefix, clickHandler) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            dataArray.forEach(item => {
+                const btn = document.createElement('div');
+                btn.className = 'img-btn';
+                btn.onclick = () => clickHandler(item.id);
+                btn.dataset.id = item.id;
+                
+                const paddedID = String(item.id).padStart(2, '0');
+                const imgPath = `images/${prefix}-${paddedID}.png`;
+                const label = item.name || `No.${paddedID}`;
+                
+                btn.innerHTML = `
+                    <div class="level-badge">Lv.${item.level}</div>
+                    <img src="${imgPath}" alt="${label}" onerror="this.style.display='none';this.parentElement.innerText='${label}'">
+                    <div class="btn-label">${label}</div>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function selectTile(id) {
+            currentTileID = id;
+            updateActiveState('list-tiles', id);
+            forceReset();
+            updatePreview();
+        }
+
+        function selectShape(id) {
+            currentShapeID = id;
+            updateActiveState('list-shapes', id);
+            forceReset();
+            updatePreview();
+        }
+
+        function updateActiveState(containerId, activeId) {
+            const container = document.getElementById(containerId);
+            container.querySelectorAll('.img-btn').forEach(btn => {
+                if(parseInt(btn.dataset.id) === activeId) {
+                    btn.classList.add('active');
+                    btn.scrollIntoView({ behavior: "smooth", block: "center" });
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+        
+        function resetSolverState() {
+            allSolutions = [];
+            currentSolIndex = 0;
+            renderEmptyGrid();
+            document.getElementById('btn-solve').innerText = "✨Chanting the Seal✨";
+            document.getElementById('status-text').innerHTML = ""; 
+        }
+
+        function getValidTargetAssignments(shapeTargets, tileBlocks) {
+            const targets = shapeTargets.map(t => typeof t === 'number' ? { pos: t, req: 'M' } : t);
+            let validAssignments = [];
+
+            if (targets.length === 1 && tileBlocks.length >= 1) {
+                for (let i = 0; i < tileBlocks.length; i++) {
+                    if (targets[0].req === 'M' || targets[0].req === tileBlocks[i].f) {
+                        validAssignments.push([tileBlocks[i]]);
+                    }
+                }
+            } 
+            else if (targets.length === 2 && tileBlocks.length === 2) {
+                if ((targets[0].req === 'M' || targets[0].req === tileBlocks[0].f) &&
+                    (targets[1].req === 'M' || targets[1].req === tileBlocks[1].f)) {
+                    validAssignments.push([tileBlocks[0], tileBlocks[1]]);
+                }
+                if ((targets[0].req === 'M' || targets[0].req === tileBlocks[1].f) &&
+                    (targets[1].req === 'M' || targets[1].req === tileBlocks[0].f)) {
+                    validAssignments.push([tileBlocks[1], tileBlocks[0]]);
+                }
+            }
+            return validAssignments;
+        }
+
+        function updatePreview() {
+            const shape = SHAPES.find(s => s.id === currentShapeID);
+            const tile = TARGET_TILES.find(t => t.id === currentTileID);
+            
+            if(!shape || !tile) return;
+
+            currentLayoutConfig = {};
+            for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
+            shape.active.forEach(pos => { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; });
+            
+            const validAssignments = getValidTargetAssignments(shape.targets, tile.blocks);
+            
+            if (validAssignments.length > 0) {
+                const assignment = validAssignments[0];
+                const targets = shape.targets.map(t => typeof t === 'number' ? { pos: t, req: 'M' } : t);
+                
+                targets.forEach((targetObj, idx) => {
+                    const blockDef = assignment[idx];
+                    currentLayoutConfig[targetObj.pos - 1] = { 
+                        type: 'FIXED', 
+                        id: blockDef.id, 
+                        face: blockDef.f 
+                    };
+                });
+            }
+            
+            renderGrid(null, true);
+        }
+
+        function getRotatedMatrix(matrix, rot) {
+            if (rot === 0) return matrix;
+            const [[a, b], [c, d]] = matrix;
+            if (rot === 1) return [[c, a], [d, b]]; 
+            if (rot === 2) return [[d, c], [b, a]]; 
+            if (rot === 3) return [[b, d], [a, c]]; 
+            return matrix;
+        }
+
+        function isValid(boardState, currentSlot) {
+            let fullGrid = Array(6).fill().map(() => Array(6).fill(0));
+            
+            for(let i=0; i<9; i++) {
+                if(!boardState[i]) continue;
+                let b = boardState[i];
+                let baseRow = Math.floor(i / 3) * 2;
+                let baseCol = (i % 3) * 2;
+                let matrix = getRotatedMatrix(BLOCKS[b.id][b.face], b.rot);
+                fullGrid[baseRow][baseCol] = matrix[0][0]; 
+                fullGrid[baseRow][baseCol+1] = matrix[0][1];
+                fullGrid[baseRow+1][baseCol] = matrix[1][0]; 
+                fullGrid[baseRow+1][baseCol+1] = matrix[1][1];
+            }
+            
+            let rowsToCheck = [0, 1, 2, 3, 4, 5];
+            let colsToCheck = [0, 1, 2, 3, 4, 5];
+            
+            if (currentSlot !== undefined && currentSlot >= 0) {
+                let baseRow = Math.floor(currentSlot / 3) * 2;
+                let baseCol = (currentSlot % 3) * 2;
+                rowsToCheck = [baseRow, baseRow + 1];
+                colsToCheck = [baseCol, baseCol + 1];
+            }
+
+            for (let r of rowsToCheck) {
+                let rowSeen = 0; 
+                for (let c = 0; c < 6; c++) {
+                    let val = fullGrid[r][c];
+                    if (val !== 0) {
+                        let bit = 1 << val;
+                        if ((rowSeen & bit) !== 0) return false; 
+                        rowSeen |= bit;
+                    }
+                }
+            }
+            
+            for (let c of colsToCheck) {
+                let colSeen = 0;
+                for (let r = 0; r < 6; r++) {
+                    let val = fullGrid[r][c];
+                    if (val !== 0) {
+                        let bit = 1 << val;
+                        if ((colSeen & bit) !== 0) return false; 
+                        colSeen |= bit;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function solveAll(board, usedIDs) {
+            if (allSolutions.length >= 288) return true;
+
+            let slot = -1;
+            for(let i=0; i<9; i++) {
+                if (!currentLayoutConfig[i]) continue;
+                const type = currentLayoutConfig[i].type;
+                if(board[i] === null && (type === 'SOLVE' || type === 'FIXED')) {
+                    slot = i; break;
+                }
+            }
+
+            if (slot === -1) {
+                allSolutions.push(JSON.parse(JSON.stringify(board)));
+                return false; 
+            }
+
+            const config = currentLayoutConfig[slot];
+            let candidates = [];
+
+            const forceB = document.getElementById('test-force-b').checked;
+            const forceW = document.getElementById('test-force-w').checked;
+
+            if (config.type === 'FIXED') {
+                candidates.push({ id: config.id, face: config.face, isFixed: true });
+            } else {
+                for (let id = 1; id <= 9; id++) {
+                    if (!usedIDs.has(id) && !reservedIDs.has(id)) {
+                        if (!forceW) candidates.push({ id: id, face: 'B', isFixed: false });
+                        if (!forceB) candidates.push({ id: id, face: 'W', isFixed: false });
+                    }
+                }
+            }
+
+            // 【完全依賴測試選項，無視關卡等級】
+            const lockRotation = document.getElementById('test-lock-rotation').checked;
+
+            for (let cand of candidates) {
+                let rotationsToTest = (lockRotation) ? [0] : [0, 1, 2, 3];
+                
+                for (let rot of rotationsToTest) {
+                    board[slot] = { id: cand.id, face: cand.face, rot: rot, isFixed: cand.isFixed };
+                    
+                    if (isValid(board, slot)) {
+                        usedIDs.add(cand.id);
+                        if (solveAll(board, usedIDs)) return true; 
+                        usedIDs.delete(cand.id);
+                    }
+                    board[slot] = null;
+                }
+            }
+            return false;
+        }
+
+        function startSolving() {
+            // Hash 紀錄改為只依賴 ID 與 測試選單狀態，不再依賴 Level 判斷
+            const isLockedRot = document.getElementById('test-lock-rotation').checked;
+            const isForceB = document.getElementById('test-force-b').checked;
+            const isForceW = document.getElementById('test-force-w').checked;
+            
+            const currentParamsHash = `${currentTileID}-${currentShapeID}-${isLockedRot}-${isForceB}-${isForceW}`;
+            const solveBtn = document.getElementById('btn-solve');
+
+            if (currentParamsHash !== lastParamsHash || allSolutions.length === 0) {
+                document.getElementById('status-text').innerHTML = "🔮Chanting...";
+                solveBtn.disabled = true;
+                
+                const shape = SHAPES.find(s => s.id === currentShapeID);
+                const tile = TARGET_TILES.find(t => t.id === currentTileID);
+
+                if (Object.keys(currentLayoutConfig).length === 0) {
+                     alert("請先選擇圖形與魔石！");
+                     solveBtn.disabled = false;
+                     return;
+                }
+
+                const validAssignments = getValidTargetAssignments(shape.targets, tile.blocks);
+                if (validAssignments.length === 0) {
+                     alert("⚠️ 屬性不合：這顆魔石的黑白面無法滿足法陣的限制條件！");
+                     solveBtn.disabled = false;
+                     document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 屬性衝突</span>";
+                     return;
+                }
+
+                allSolutions = []; 
+                reservedIDs.clear();
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        validAssignments.forEach(assignment => {
+                            let board = Array(9).fill(null);
+                            let used = new Set();
+                            reservedIDs.clear();
+                            
+                            currentLayoutConfig = {};
+                            for(let i=0; i<9; i++) currentLayoutConfig[i] = { type: 'EMPTY' };
+                            shape.active.forEach(pos => { currentLayoutConfig[pos-1] = { type: 'SOLVE' }; });
+                            
+                            const targets = shape.targets.map(t => typeof t === 'number' ? { pos: t, req: 'M' } : t);
+                            
+                            targets.forEach((targetObj, idx) => {
+                                const blockDef = assignment[idx];
+                                currentLayoutConfig[targetObj.pos - 1] = { 
+                                    type: 'FIXED', 
+                                    id: blockDef.id, 
+                                    face: blockDef.f 
+                                };
+                                reservedIDs.add(blockDef.id);
+                            });
+
+                            solveAll(board, used); 
+                        });
+
+                        solveBtn.disabled = false;
+
+                        if (allSolutions.length > 0) {
+                            currentSolIndex = 0;
+                            lastParamsHash = currentParamsHash; 
+                            updateStatusAndRender();
+                        } else {
+                            document.getElementById('status-text').innerHTML = "<span class='error-msg'>❌ 失敗 Fail </span>";
+                            solveBtn.innerText = "✨Chanting✨";
+                        }
+                    });
+                });
+
+            } else {
+                currentSolIndex++;
+                if (currentSolIndex >= allSolutions.length) {
+                    currentSolIndex = 0; 
+                }
+                updateStatusAndRender();
+            }
+        }
+
+        function updateStatusAndRender() {
+            const total = allSolutions.length;
+            const current = currentSolIndex + 1;
+            const btn = document.getElementById('btn-solve');
+            const status = document.getElementById('status-text');
+
+            renderGrid(allSolutions[currentSolIndex], false);
+
+            if (total === 1) {
+                status.innerHTML = "<span class='success-msg'>✅ 1 Seal</span>";
+                btn.innerText = "✨ Only Seal ✨";
+            } else {
+                let countText = total >= 288 ? "288+" : total;
+                status.innerHTML = `<span class='multi-msg'>✅  ${current} / ${countText} Seals</span>`;
+                btn.innerText = "➡️Next";
+            }
+        }
+
+        function renderEmptyGrid() {
+            renderGrid(null, true);
+        }
+
+        function renderGrid(boardData, isPreview) {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            
+            // 畫面上的鎖頭圖示也完全依賴勾選框狀態
+            const isLocked = document.getElementById('test-lock-rotation').checked;
+
+            for(let i=0; i<9; i++) {
+                const config = currentLayoutConfig[i];
+                let block = boardData ? boardData[i] : null;
+                const div = document.createElement('div');
+                div.className = 'block';
+
+                if (isPreview && config && config.type === 'FIXED') {
+                    block = { id: config.id, face: config.face, rot: 0, isFixed: true };
+                }
+
+                if (config && config.type === 'EMPTY') {
+                    div.classList.add('empty-slot');
+                } 
+                else if (block) {
+                    div.style.borderColor = block.isFixed ? '#e74c3c' : '#555';
+                    
+                    const paddedBlockId = String(block.id).padStart(2, '0');
+                    const imagePath = `images/block_${block.face}-${paddedBlockId}.png`;
+                    const rot = block.rot * 90;
+                    
+                    const lockIcon = (block.isFixed && isLocked) ? '🔒' : '';
+                    
+                    div.innerHTML = `
+                        <img src="${imagePath}" class="block-image" style="transform: rotate(${rot}deg);"
+                             onerror="this.style.display='none'; this.parentNode.innerText='${block.face}${block.id}';">
+                        <div class="block-info">${block.face}${block.id} ${lockIcon}</div>
+                    `;
+                }
+                else if (config && config.type === 'SOLVE') {
+                    div.innerHTML = '<span style="color:#ccc; font-size:2rem;">?</span>';
+                }
+                container.appendChild(div);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
